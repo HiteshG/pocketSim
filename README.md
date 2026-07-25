@@ -1,31 +1,70 @@
-# PocketSim
+# Crowd
 
-Run a focus-group screening for a script that hasn't been produced yet.
+*A synthetic audience simulation system.*
 
-Pocket FM commits writer, VO and production spend across 60–100 episodes before it learns whether a story retains. The curve is discovered after the money is spent — and a story ships once, so there is never a counterfactual. PocketSim plays a script to a few hundred synthetic listeners, episode by episode, and turns their decisions into a ranked list of which episodes to fix, where to put the paywall, and which cohort the story is actually for.
+Crowd plays a script to a few hundred synthetic listeners, episode by episode, and turns their decisions into a ranked list of which episodes to fix, where to put the paywall, and which cohort the story is actually for.
 
-> **Relative claims only.** Personas are synthesised from hand-authored archetypes, not fitted from listening logs, and no backtest has been run. Everything here is valid for *ranking episodes within a script* and *measuring a rewrite against its own baseline*. Nothing here predicts real retention. See [What it can and cannot claim](#what-it-can-and-cannot-claim).
+## Features
 
----
+Crowd works with personas that are synthesised from hand-authored archetypes, not fitted from listening logs, and no backtest has been run.
+
+- Ranking episodes *within* a script — which ones are weakest relative to the rest
+- Paired rewrite deltas — same audience, v1 vs v2
+- Cross-script ranking — script A vs script B
+- Drop-beat localisation — where inside an episode attention breaks
+- Cohort divergence — which archetype engages most (directional)
+
+Reports say *"episode 7 is the weakest in this script; the rewrite recovers X points in paired simulation"* — never *"predicted retention: 34%."* Relative claims survive persona miscalibration because the bias applies roughly uniformly and cancels in the difference. Absolute claims do not, and with no data behind them they'd be indefensible.
+
+The reports go further than a dashboard could. **Craving delta** catches the episode that resolves *too cleanly* — a satisfying finish that quietly loses the listener on a serialized platform, invisible to a satisfaction score. **Prediction disagreement** tells you whether a cliffhanger actually works, or just looks like one. And the **Fix List** ranks every episode by real money at risk — `drop_rate × active_share × episodes_remaining` — so a weak episode before the paywall gets triaged as the emergency it is, instead of the same shrug as a weak episode nobody was going to reach anyway.
 
 ## The mental model
 
 It's a focus group. Each command is one step of running one.
 
-| Command | Plain English | When | Cost |
-|---|---|---|---|
-| `ingest` | **Prepare the script.** Split at `Episode N` headers, tag 5–10 named story beats per episode so "I zoned out at the wedding confrontation" points at something specific. | Once per script | ~$0.50 |
-| `personas` | **Hire the test audience.** Synthesise listeners with names, jobs, commutes, spending habits. Saved to a file. | Once, reused forever | Free via Codex |
-| `simulate` | **Hold the screening.** Play the story to everyone, episode by episode. Each answers: continue or drop, pay or not, where they checked out, what they expect next. | Per script version | ~$15–30 |
-| `report` | **Write up what happened.** Fix List, retention curve, paywall call, cohort map, drop-beat map. | As often as you like | Free |
-| `compare` | **Diff two screenings.** You rewrote episode 7 — did it work, and by how much? | After a rewrite | Free |
-| `history` | Housekeeping — what's been run, export raw data. | Whenever | Free |
+| Command | Plain English | 
+|---|---|
+| `ingest` | Prepare the script — split into episodes, tag story beats | 
+| `personas` | Hire the test audience, saved to a file and reused forever | 
+| `simulate` | Hold the screening — episode by episode, continue/drop, pay/not | 
+| `report` | Write up what happened — fix list, retention curve, paywall call |   
+| `compare` | Diff two screenings — did the rewrite work, and by how much? | 
 
-**Why `simulate` and `report` are separate.** Simulating is slow and costs money; reporting is instant and free. You simulate once and re-report fifty times as metrics get added or the slicing changes. Merged, every tweak to a table would cost another full run.
 
-**Why the population file is saved and reused.** `compare` is the highest-value command and it only works if both runs used the *same* listeners — then persona bias cancels in the difference and you know the script moved, not the audience. `compare` hard-refuses to report a number if the two runs used different populations.
+## Quickstart
 
----
+Runs offline on the bundled sample with `--provider mock` — no API key, no cost.
+
+```bash
+# 1. Prepare the script
+pocketsim ingest --script scripts/script1.txt --series script1 \
+                 --market india-hindi --provider mock
+
+# 2. Hire the audience (once — reused for every run after this)
+pocketsim personas build --market india-hindi --count 25 --seed 42 \
+                 --out populations/script1-25.json --provider mock
+
+# 3. Read a few of them — this is the validity gate
+pocketsim personas inspect --population populations/script1-25.json -n 3
+
+# 4. Hold the screening
+pocketsim simulate --series script1 --population populations/script1-25.json \
+                 --run-id script1-smoke --provider mock
+
+# 5. Write it up
+pocketsim report --run script1-smoke --format html --open
+```
+
+Then the loop that earns its keep — a writer rewrites episode 7:
+
+```bash
+pocketsim ingest   --script scripts/script1-v2.txt --series script1-v2 --market india-hindi
+pocketsim simulate --series script1-v2 --population populations/script1-25.json \
+                   --run-id script1-v2 --provider mock
+pocketsim compare  --base script1-smoke --against script1-v2
+```
+
+For real runs, drop `--provider mock` (defaults to `openai-api`) and start with `--limit-episodes 3` to smoke-test for about a dollar.
 
 ## Install
 
@@ -39,264 +78,6 @@ Python 3.11+.
 
 ---
 
-## Quickstart
+Everything below the surface — how personas are synthesised, what gets measured and why, provider tradeoffs, markets, verification, and what's deliberately not built yet — is in **[DESIGN.md](DESIGN.md)**.
 
-Everything below runs offline on the bundled live script with `--provider mock` — no API key, no cost.
-
-```bash
-# 1. Prepare the script
-pocketsim ingest   --script scripts/script1.txt --series script1 \
-                   --market india-hindi --provider mock
-
-# 2. Hire the audience (once — then reused for every run)
-pocketsim personas build --market india-hindi --count 25 --seed 42 \
-                   --out populations/script1-25.json --provider mock
-
-# 3. Read a few of them. THIS IS THE VALIDITY GATE — see below.
-pocketsim personas inspect --population populations/script1-25.json -n 3
-
-# 4. Hold the screening
-pocketsim simulate --series script1 --population populations/script1-25.json \
-                   --run-id script1-smoke --provider mock
-
-# 5. Write it up
-pocketsim report   --run script1-smoke --format html --open
-```
-
-`personas build` writes `populations/<name>.audit.md` and `.audit.json`. `report`
-writes the decision report plus `runs/<run-id>/report/learning.md`, which records
-what ran, how personas were generated and validated, the outcomes, and automatic
-harness warnings for future improvement.
-
-Then the loop that actually earns its keep:
-
-```bash
-#    ... a writer rewrites episode 7 -> scripts/script1-v2.txt ...
-pocketsim ingest   --script scripts/script1-v2.txt --series script1-v2 --market india-hindi
-pocketsim simulate --series script1-v2 --population populations/script1-25.json \
-                   --run-id script1-v2 --provider mock
-pocketsim compare  --base script1-smoke --against script1-v2
-```
-
-For real runs drop `--provider mock` (defaults to `openai-api`) and start with `--limit-episodes 3` to smoke-test for about a dollar.
-
----
-
-## What it can and cannot claim
-
-This is the most important section in the README.
-
-**Supported today**
-
-- Ranking episodes *within* a script — which ones are weakest relative to the rest
-- Paired rewrite deltas — same audience, v1 vs v2
-- Cross-script ranking — script A vs script B
-- Drop-beat localisation — where inside an episode attention breaks
-- Cohort divergence — which archetype engages most (directional)
-
-**Not supported**
-
-- Absolute retention percentages
-- A validated paywall episode (the recommendation is directional)
-- Any claim of predictive accuracy
-
-Reports say *"episode 7 is the weakest in this script; the rewrite recovers X points in paired simulation."* They never say *"predicted retention: 34%."* Relative claims survive persona miscalibration because the bias applies roughly uniformly and cancels in the difference. Absolute claims do not, and with no data behind them they would be indefensible.
-
-`pocketsim calibrate` is a documented stub. It activates when you have 20–30 completed series with known retention curves, **stratified by outcome — hits, mid-performers *and* flops.** A set of hits alone measures correlation but not discrimination, and discrimination is the entire product.
-
----
-
-## Persona synthesis
-
-You have no personas and no logs. Inventing 300 listeners in a prompt produces a population nobody can defend and nobody can debug, so the pipeline is built around one rule:
-
-> **Sample the numbers, generate the prose.**
-
-The model never invents a numeric attribute. Every number a persona carries is drawn from a distribution declared in `markets/*.yaml`; the LLM only writes biography around that skeleton. That makes the population auditable (every number traces to a line a human can argue with), reproducible under a seed, and correctable when real data arrives.
-
-| Layer | Where | What |
-|---|---|---|
-| 1 · Market definition | `markets/*.yaml` | Genres, money anchors, competitive alternatives, cities |
-| 2a · Occasion cohorts | `markets/*.yaml` | 5–8 templates per market, as *distributions* not point values |
-| 2b · Need regions | `markets/_ontology.yaml` | 6 regions, drivers and the hook/dealbreaker banks — shared across markets |
-| 3 · Numeric sampling | `personas.py` | Seeded draws — reproducible and inspectable |
-| 4 · Prose enrichment | `personas.py` | LLM writes biography, batched with name-collision avoidance |
-| 5 · Diversity audit | `personas audit` | Fails loudly on mode collapse, on either axis |
-| 6 · **Human validity gate** | `personas inspect` | Your content team confirms they recognise these people |
-
-Layer 6 is not a formality. With no listening data there is no backtest, so **the check that matters is whether the content team recognises these as real Pocket FM listeners.** If they don't, nothing downstream is worth running.
-
-### The two axes
-
-Every persona is described twice, and the split is load-bearing:
-
-| | **Occasion cohort** — `cohort_id` | **Need region** — `region_id` |
-|---|---|---|
-| Answers | *When and how do they listen?* | *What do they want a story to do for them?* |
-| Owns | Session structure, tempo, gap decay, payment tier | Drivers, patience, commitment, register, hooks, dealbreakers |
-| Determines | The **shape** of the retention curve | **Which stories** retain them |
-| Declared in | Each market file — occasions are local | `markets/_ontology.yaml` — regions are platform-wide |
-| Example | `gig-worker-marathon`, `domestic-daytime` | Justice-Payoff Bingers, Slow-Burn Comfort Seekers |
-
-Neither subsumes the other. A gig worker on an eight-hour shift and a homemaker doing chores can both be Justice-Payoff listeners and will drop at the same narrative failure — at different points on the clock. Two people on the same commute can want opposite things from a story. One axis alone predicts the wrong half of the behaviour.
-
-Each cohort declares a `region_mix` — the join. Given that someone listens *this* way, what do they want? That is hand-authored per market, which is why the same six regions come out weighted differently in Hindi (justice 27%, status 20%) and English (comfort 24%, tier-1 22%).
-
-**A variable lives on exactly one axis.** Region never re-declares tempo, and touches willingness-to-pay only through a declared `pay_threshold_shift` on the cohort's base rate — pay *psychology* (which gate converts you) is a taste fact, pay *capacity* is an income fact. Without that rule the two axes grow synonym variables and the population starts double-counting itself.
-
-Regions carry an **evidence tier** — `T-A` public evidence, `T-B` industry prior, `T-C` our own hypothesis — which travels all the way into the report, so a highly-ranked region on `T-C` evidence is visibly a hypothesis rather than a finding. Each region also declares a low-probability **anti-stereotype** slice; without it every member behaves like the region's centroid, and a population of six centroids produces a clean retention curve describing nobody.
-
-Regions and banks live in one shared file that every market imports, so editing a region changes every market, every population and every report with no other edit.
-
-Every cohort ships tagged `provisional: true`. When real behavioural data arrives, layer 2a is replaced by clusters discovered from session-length distributions, time-of-day histograms, inter-episode gaps, genre mix and coin-spend patterns. Layers 3–6 do not change.
-
----
-
-## What gets measured
-
-**The four primitives**, captured per persona per episode. Everything else is diagnostic colour.
-
-| Primitive | Question |
-|---|---|
-| Continue / drop | Would you open the next episode? Why? |
-| Pay / don't pay | If the paywall were here, would you spend coins? |
-| Attention drop | At which beat did you check out? |
-| Expectation | What do you think happens next? |
-
-Continue and pay stay separate on purpose. Enjoyment and willingness-to-pay diverge constantly — people love stories they won't pay for, and pay for mediocre ones because they can't stand not knowing. Collapsing them into one "satisfaction" number destroys the signal that matters.
-
-**The headline output is the Fix List:**
-
-```
-RevenueAtRisk(ep) = drop_rate(ep) × active_share(ep) × episodes_remaining(ep)
-```
-
-This answers the question the writers' room actually has — *where do I spend limited rewrite time?* A weak episode at 6, pre-paywall with everyone still listening, is a revenue emergency; the identical weakness at 18 is a nuisance. Raw drop rate can't tell them apart.
-
-**Two metrics no analytics dashboard can produce**, because real listeners never tell you what they expected:
-
-- **Prediction disagreement** — mean pairwise distance between what listeners think happens next. Predictable is the death of the next-episode open. High craving with *low* disagreement means they already know what's coming and have no reason to hurry back; high craving with high disagreement is what a working cliffhanger looks like.
-- **Craving delta** — `craving_end − craving_mid`. A satisfying, cleanly-resolved episode is a **churn event** on a serialized platform. This catches the episode that is *too well-resolved*, which is invisible to satisfaction ratings and needs a completely different fix from "boring."
-
-**Episode flags** separate failure modes that need different fixes: `OVER_RESOLVED` (closed its own loop — end on the open question), `BORING` (needs stakes, not restructuring), `WORKING_HOOK`, `PREDICTABLE_BUT_WANTED` (fragile), `HIGH_DROP`.
-
-**Trope fatigue** compares drop rates between long-tenure and new listeners. Veterans dropping where new users don't is a *cliché* signal, not a weak-writing signal — the beat works fine for someone hearing it first time. Different diagnosis, different reviewer.
-
-**Cohort fit** ranks the six need regions for this script — the pre-launch targeting map. It is published as a **ranking, never a score**: if the panel is uniformly miscalibrated the shares all move together and the ordering mostly does not, so the ordering is the part worth acting on. Each row carries the region's evidence tier and, where the beat map found one, the specific dealbreaker the script trips that is *live for that region* — a dealbreaker excluded for a region is not listed against it, because the same beat that loses one audience can be why another one stays.
-
-**Filler** comes from the beat map: beats tagged as moving nothing and removable, ordered by the drop rate of the episode they sit in. Filler in an episode nobody leaves is a tidiness note; the same beat in a high-drop episode is a candidate for the drop itself.
-
-`verdict.json` is checked before it is written: any field name that would assert a calibrated real-world prediction (`predicted_*`, `expected_retention`, …) fails the write. Panel-relative shares stay — they describe what this simulated panel did, which is a fact about the run.
-
----
-
-## Providers
-
-| | `openai-api` (default) | `codex-cli` | `mock` |
-|---|---|---|---|
-| Schema guarantee | **Structured Outputs, `strict: true`** | Best-effort + repair retry | Always valid |
-| Cost | ~$15–30 per full run | **Zero marginal** | Zero |
-| Speed | Async fan-out | Subprocess pool | Instant |
-
-**Use them for different jobs.** The design rests on guaranteed-parseable reactions — a 3% failure rate across 4,000 calls is a silently biased curve — so **production runs go through the API**. Persona synthesis and smoke tests go through **Codex CLI for free**, which takes day-to-day iteration to roughly zero and leaves spend only on runs that produce a report. `mock` is deterministic and offline; it exists so the whole pipeline including the null test can be exercised with no key.
-
-If your Codex CLI's non-interactive flags differ, override the invocation:
-
-```bash
-export POCKETSIM_CODEX_CMD="codex exec -c 'model_reasoning_effort=\"low\"' --skip-git-repo-check --ephemeral --ignore-rules --sandbox read-only --color never -"
-```
-
-**Cost control.** The Hindi script is fed verbatim in Devanagari (preserving register) but sits in the cached stable prefix, so its token weight is paid roughly once per episode instead of once per listener. Within each episode the first call is fired alone and awaited before the rest fan out — a cache entry only becomes readable once the response that created it starts returning, so firing all 300 at once means all 300 pay full price for the same prefix.
-
----
-
-## Markets
-
-`--market` is a real parameter, not decoration. Adding a market is adding a YAML file.
-
-```bash
-pocketsim markets
-```
-
-`india-hindi` (8 occasion cohorts) ships alongside `india-english` (5), and they are deliberately **not** translations of each other — different genre taxonomy, different competitive set, different price sensitivity, disjoint cohorts. Tamil or Telugu is a new file, no code change.
-
-The six **need regions** are shared: a region is platform identity, not a market's local invention, so the same Justice-Payoff Bingers card describes that appetite everywhere. What each market contributes is the join — which regions its occasions draw from — and the resulting marginals differ sharply:
-
-| Region | india-hindi | india-english |
-|---|---:|---:|
-| Justice-Payoff Bingers | 27% | 17% |
-| Status-Progression Loyalists | 20% | 11% |
-| Household-Catharsis Devotees | 16% | 7% |
-| Slow-Burn Comfort Seekers | 14% | 24% |
-| High-Churn Thrill Chasers | 13% | 20% |
-| Tier-1 Aspirational Escapists | 10% | 22% |
-
-A market may narrow a region's *register* where its language genuinely moves the distribution, and nothing else. Drivers, banks and pay psychology are not overridable — allowing that would fork the ontology by the back door, which is the failure the shared file exists to prevent.
-
----
-
-## Verification
-
-Run these before trusting any output.
-
-```bash
-# Same seed twice → identical audience (compare the reported fingerprints)
-pocketsim personas build --market india-hindi --count 300 --seed 42 --out /tmp/a.json --provider mock
-
-# Diversity audit — catches the default failure mode of LLM persona generation
-pocketsim personas audit --population populations/ih-300.json
-```
-
-**The null test.** The most important check in the system:
-
-```bash
-pocketsim simulate --series naagin --population populations/ih-300.json --run-id nt-a
-pocketsim simulate --series naagin --population populations/ih-300.json --run-id nt-b
-pocketsim compare  --base nt-a --against nt-b
-```
-
-Same script, same audience, run twice — so *nothing changed*. Whatever this reports is the **noise floor** of your configuration. With `--provider mock` it is exactly zero. With a real model at non-zero temperature it will not be, and **any rewrite delta smaller than that number is unproven.** `compare` detects this case automatically and labels it.
-
-Other guards, all enforced rather than documented:
-
-- Comparing runs with **different populations** refuses to report a number and exits 2
-- A population built for one market cannot be used to simulate another
-- `personas build` exits 2 if the diversity audit fails
-- Schema failures are counted and reported as a percentage — they're dropped from the dataset, so the curve is biased by exactly that much
-- `runs/<run-id>/report/learning.md` records run setup, persona generation, validation checks, outcomes and automatic harness warnings
-
----
-
-## Layout
-
-```
-markets/          india-hindi.yaml, india-english.yaml   ← occasion cohorts, per market
-  _ontology.yaml  drivers · hook/dealbreaker banks · 6 need regions ← shared, imported
-scripts/          raw .txt scripts
-series/<name>/    episodes.json + beats.json             ← ingest output, reused across runs
-populations/      generated audiences, versioned by seed
-runs/<run_id>/
-  manifest.json   what ran, against what, which population fingerprint
-  input/          provenance copies
-  reactions.jsonl written during the run — a crash at ep 17 of 20 leaves 17 usable
-  report/         verdict.json · report.md · report.html
-  logs/run.log
-src/pocketsim/    cli · config · ingest · personas · llm · schema · simulate · metrics · report · store
-```
-
-`verdict.json` is the machine-readable surface — headline decisions, fix list, paywall curve, per-episode metrics, the occasion map, the ranked need-region cohort fit, and the filler beats.
-
----
-
-## Not in v1
-
-Audio-layer modelling (VO, pacing, sound design) is explicitly out of scope. Those are real retention drivers on an audio platform and the simulation cannot see any of them — worth saying out loud before anyone asks. Also deferred: word-of-mouth propagation between listeners, and a deep-dive tier that explains *why* an episode loses people in writer-actionable prose rather than just locating it.
-
-**Deliberately not merged from the companion ontology docs.** The need regions, driver vocabulary, hook/dealbreaker banks and beat-table fields are in. These are not:
-
-- **Story Genome (Module A)** — 18 scored dimensions, five trajectory curves and an embedding per story, at catalog scale. It is a genuinely separate engine and this repo has one script, not a catalog. Its spec, `story-genome-enrichment.md`, is cited as authoritative by the Story Intelligence doc and **is not in this repo** — that dependency is still dangling.
-- **The full Episode Intelligence pipeline (B1–B8)** — we merged the B4 beat table and the parts of B3 that the beat map can carry (bank hits, tripped dealbreakers). Narrative anatomy, the promise ledger, per-episode driver scoring with script citations, and the intervention/trade-off generator are not built.
-- **US and Tamil/Telugu markets** — the source ontology weights US romance and Tamil/Telugu at 35% of its modelled population. Both are a new YAML file and no code change, but neither exists yet, and two of its six cards are majority-US.
-- **`recommend_to_others` / `return`** — v2 in the source vocabulary too; there is no social layer or re-engagement model here.
-
-Where the two documents disagree on market weights, this repo does **not** silently reconcile — `markets/india-hindi.yaml` records the deltas against the ontology's implied India marginal and why each one differs.
+Simulating is slow and costs money; reporting is instant and free, so you simulate once and re-report as metrics get added. The population file is reused across runs on purpose — `compare` only works if both runs used the *same* listeners, so persona bias cancels in the difference and you know the script moved, not the audience.
