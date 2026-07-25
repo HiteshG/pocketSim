@@ -1,0 +1,446 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Behavioural need ontology — shared across every market
+#
+# Merged from Behavioural Population Ontology v1.0 §3-§4. This file is the single
+# copy: markets reference it with `ontology: _ontology` rather than restating it.
+# Story Intelligence Ontology §1 requires cohort regions to be imported and never
+# hardcoded per consumer — a card edited here propagates to every market, every
+# population and every report with no other file touched.
+#
+# Leading underscore keeps it out of `pocketsim markets`, which lists playable
+# markets; this is a fragment, not a market.
+#
+# ── The two-axis model ──
+#
+# A listener is described on two orthogonal axes:
+#
+#   occasion cohort (in each market file)  WHEN and HOW they listen. Owns session
+#     structure, tempo, gap decay, payment tier. Determines the *shape* of the
+#     retention curve.
+#   need region (here)                     WHAT they want a story to do for them.
+#     Owns psychological drivers, patience, commitment, register, and which beats
+#     land or lose them. Determines *which stories* retain them.
+#
+# Neither subsumes the other. A gig worker on an eight-hour shift and a homemaker
+# doing chores can both be Justice-Payoff listeners and will drop at the same
+# narrative failure — at different points on the clock.
+#
+# OWNERSHIP RULE: a variable lives on exactly one axis. The source ontology's
+# `binge_speed` and `listening_context` are NOT reproduced here, because the
+# occasion cohort already carries them as session_minutes / avg_daily_minutes /
+# session_pattern / occasion. Duplicating them would create exactly the synonym
+# variables the ontology's own Block C-half engineer note says to delete. Region
+# touches willingness-to-pay only through `pay_threshold_shift`, a declared
+# modifier on the cohort-sampled base, never as a second independent draw.
+#
+# ── Evidence tiers (Behavioural Ontology §1) ──
+# Carried per region so no assumption is laundered as a fact.
+#   T-A  public evidence — charts, store reviews, ad library, public interviews
+#   T-B  industry prior — plausible transfer from an adjacent format
+#   T-C  creative hypothesis owned by this team
+#
+# The canonical answer when someone asks how we know: we don't, and that is the
+# design. Every assumption is tagged, and the platform is built to replace
+# assumptions with telemetry as it arrives.
+# ─────────────────────────────────────────────────────────────────────────────
+
+ontology_version: "1.0"
+
+# PRD §2.2 vocabulary — FROZEN. Adding a term is a cross-team decision, not a
+# file edit. Rejected and closed: Romance, Mystery (genres, not needs), Status
+# (= power_fantasy), Adventure (~= escapism), Self-Improvement (nothing
+# downstream consumes it).
+drivers:
+  - catharsis
+  - justice_seeking
+  - escapism
+  - comfort
+  - belonging
+  - power_fantasy
+  - wish_fulfillment
+  - nostalgia
+  - identity
+  - hope
+
+# Non-driver predicates the banks may key on, so `aff:`/`excl:` tags validate
+# against a closed set instead of drifting into free text.
+style_predicates:
+  - low_patience
+  - high_patience
+  - literary_register
+  - pulp_register
+  - romance_centric
+  - family_drama
+  - thrill_seeking
+
+# One driver per persona is shifted a level with this probability, so a region is
+# a high-density behavioural area rather than a fixed persona.
+driver_jitter: 0.25
+
+# ─────────────────────────────────────────────────────────────────────────────
+# MBTI — every persona carries one. [T-B]
+#
+# Population frequencies, not a claim about this audience: these are the standard
+# published type frequencies (ISTJ/ISFJ/ESFJ/ESTJ the common four, INFJ rarest at
+# ~2%). They are US-derived and MBTI frequencies vary by culture, so a market with
+# local evidence may override `mbti_mix`. Nothing here is fitted from listeners.
+#
+# SCOPE — read before wiring anything to this field. MBTI conditions VOICE and
+# DECISION STYLE only: how a listener deliberates and how they talk, in the prompt.
+# It does NOT modify any sampled numeric axis and does NOT feed any metric. That
+# boundary is deliberate. MBTI has poor test-retest reliability and its dimensions
+# are not independent, so it cannot carry predictive weight in a report that already
+# says its own personas are provisional. What it is good for is variance: it is a
+# frame the simulating model reads fluently, and two listeners with identical
+# numbers and different types deliberate differently — which is precisely what a
+# panel that agreed with itself 400 times out of 400 was missing.
+mbti_mix:
+  ISTJ: 0.12625
+  ISFJ: 0.11625
+  INFJ: 0.02125
+  INTJ: 0.03125
+  ISTP: 0.05125
+  ISFP: 0.07125
+  INFP: 0.04625
+  INTP: 0.04125
+  ESTP: 0.04625
+  ESFP: 0.06625
+  ENFP: 0.07125
+  ENTP: 0.03625
+  ESTJ: 0.10125
+  ESFJ: 0.11125
+  ENFJ: 0.03125
+  ENTJ: 0.03125
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Block D — dealbreakers
+#
+# `scope: universal` applies to everyone; `aff` boosts weight for those drivers,
+# regions or style predicates; `excl` removes it for them entirely.
+# ─────────────────────────────────────────────────────────────────────────────
+dealbreaker_bank:
+  - id: D1
+    text: "A love triangle is introduced after episode 5 — drops within three episodes."
+    scope: affinity
+    aff: [romance_centric]
+  - id: D2
+    text: "The female lead turns passive after marriage."
+    scope: universal
+    aff: [identity, justice_seeking]
+  - id: D3
+    text: "Recap and filler run past roughly a fifth of the episode."
+    scope: universal
+    aff: [low_patience]
+  - id: D4
+    text: "Miscommunication is the only engine of conflict for five or more episodes."
+    scope: affinity
+    aff: [romance_centric, family_drama]
+  - id: D5
+    text: "Ten or more episodes of humiliation with no payback in sight."
+    scope: affinity
+    aff: [justice_seeking, power_fantasy]
+  - id: D6
+    text: "A paywall lands on a resolved episode with no cliffhanger — refuses, and resents it."
+    scope: universal
+    excl: [slow-burn-comfort-seekers]
+  - id: D7
+    text: "A sudden tonal swerve from comedy to tragedy."
+    scope: affinity
+    aff: [comfort]
+  - id: D8
+    text: "The villain wins repeatedly and nobody counterplays."
+    scope: affinity
+    aff: [power_fantasy, justice_seeking]
+  - id: D9
+    text: "The protagonist abandons the skill that defined them for a romantic interest."
+    scope: affinity
+    aff: [power_fantasy, identity]
+  - id: D10
+    text: "An unwarned season-ending cliffhanger with no continuation available."
+    scope: universal
+  - id: D11
+    text: "The narrator's voice changes, or the audio quality drops."
+    scope: universal
+  - id: D12
+    text: "Idiot plot — established-smart characters act dumb purely to create conflict."
+    scope: universal
+    aff: [literary_register]
+  - id: D13
+    text: "Dense world-building dumped in the first three episodes."
+    scope: affinity
+    aff: [low_patience]
+    excl: [high_patience]
+  - id: D14
+    text: "In a story sold as romance, the leads are kept fully apart for twenty-plus episodes."
+    scope: affinity
+    aff: [romance_centric]
+  - id: D15
+    text: "A defeated minor antagonist returns power-buffed for another round."
+    scope: affinity
+    aff: [power_fantasy]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Block D — hooks
+# ─────────────────────────────────────────────────────────────────────────────
+hook_bank:
+  - id: H1
+    text: "A revenge milestone is completed on-screen, not reported afterwards."
+    scope: affinity
+    aff: [justice_seeking, power_fantasy]
+  - id: H2
+    text: "A hidden identity is revealed to exactly one other character."
+    scope: universal
+  - id: H3
+    text: "A courtroom or public confrontation."
+    scope: affinity
+    aff: [justice_seeking, catharsis]
+  - id: H4
+    text: "A mentor's betrayal is foreshadowed."
+    scope: universal
+  - id: H5
+    text: "The underdog's first real jump in power or status."
+    scope: affinity
+    aff: [power_fantasy]
+  - id: H6
+    text: "A romantic almost-moment, interrupted."
+    scope: affinity
+    aff: [romance_centric, comfort]
+  - id: H7
+    text: "A family secret surfaces that implicates the household itself."
+    scope: affinity
+    aff: [belonging, family_drama]
+  - id: H8
+    text: "The protagonist bluffs an enemy who vastly outmatches them."
+    scope: affinity
+    aff: [power_fantasy]
+  - id: H9
+    text: "Forced proximity — one bed, one shelter, no way out of the room."
+    scope: affinity
+    aff: [romance_centric]
+  - id: H10
+    text: "An overpowered, rule-breaking ability or artefact appears early."
+    scope: affinity
+    aff: [power_fantasy, thrill_seeking]
+  - id: H11
+    text: "The unwanted character proves their worth to the people who exiled them."
+    scope: affinity
+    aff: [identity, belonging]
+  - id: H12
+    text: "An apparently unconnected B-plot crashes into the A-plot."
+    scope: universal
+  - id: H13
+    text: "An arrogant antagonist is verbally taken apart, out loud, in front of others."
+    scope: affinity
+    aff: [justice_seeking, catharsis]
+  - id: H14
+    text: "Modern knowledge solves a mundane problem in a historical or fantasy setting."
+    scope: affinity
+    aff: [power_fantasy, escapism]
+  - id: H15
+    text: "An adorable, loyal companion or pet is introduced."
+    scope: affinity
+    aff: [comfort]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# The six need regions
+#
+# Named behaviourally, never demographically — "Household-Catharsis Devotees",
+# never "Tier-2 women". This is a hard convention from Behavioural Ontology §6
+# and it holds in every surface: YAML, reports, UI, deck. Demographics live in
+# sampling weights and cultural constants, never in a label.
+#
+# `commitment_mix` is the ontology's commitment_tolerance, in episodes.
+# `pay_threshold_shift` modifies the cohort-sampled pay_threshold and is
+# re-clipped to [0,1]. It encodes pay *psychology* — which gate converts them —
+# not a second willingness-to-pay draw.
+#
+# `pay_psychology` is analyst-facing and goes in reports; `pay_voice` is the same
+# fact addressed to the listener and goes in the simulation prompt. They are kept
+# separate because a persona told "you are the most pay-selective region" is being
+# handed the answer sheet — it reasons about its own label instead of about the
+# episode it just heard.
+#
+# A market may narrow `register_mix` via `region_overrides` where its language
+# genuinely shifts the register distribution. Nothing else is overridable: a
+# region's drivers, banks and pay psychology are platform identity.
+# ─────────────────────────────────────────────────────────────────────────────
+regions:
+
+  - id: justice-payoff-bingers
+    label: "Justice-Payoff Bingers"
+    evidence: T-A
+    evidence_note: >
+      Revenge titles dominate Hindi charts; UA creatives lead with humiliation-to-comeback;
+      store reviews praise villain comeuppance and complain about prolonged hero suffering.
+      The chart and ad-library observations are public; the behavioural reading of them is ours.
+    drivers: { justice_seeking: high, power_fantasy: high, escapism: med }
+    narrative_patience:     { dist: beta, alpha: 2.5, beta: 5 }
+    exploration_propensity: { dist: beta, alpha: 3, beta: 4 }
+    commitment_mix:   { "20": 0.10, "100": 0.30, "500": 0.60 }
+    register_mix:     { pulp: 0.72, mid: 0.24, literary: 0.04 }
+    pay_threshold_shift: 0.00
+    hooks: [H1, H5, H3, H13]
+    dealbreakers: [D5, D6, D8]
+    pay_psychology: "Pays at the gate before a confrontation. Refuses a gate on a resolved episode harder than any other region."
+    pay_voice: "You pay at the gate right before a confrontation you have been waiting for. A gate on an episode that already finished its business feels like a con, and you refuse it."
+    churn_triggers:
+      - "Ten or more episodes of suffering with no counterplay."
+      - "Consequences evaporate for the villain."
+      - "Justice is deferred again with no date attached."
+    anti_stereotype:
+      share: 0.20
+      label: "romance-B-plot-sensitive"
+      note: "Quietly follows the romance B-plot and drops if the love interest is written out."
+
+  - id: status-progression-loyalists
+    label: "Status-Progression Loyalists"
+    evidence: T-A
+    evidence_note: >
+      300+ episode epics cluster in the charts; comment sections argue about power levels and
+      hierarchy; rags-to-riches and exiled-heir creatives are present in the ad library.
+    drivers: { power_fantasy: high, identity: high, wish_fulfillment: med }
+    narrative_patience:     { dist: beta, alpha: 4, beta: 4 }
+    exploration_propensity: { dist: beta, alpha: 2, beta: 6 }
+    commitment_mix:   { "20": 0.04, "100": 0.20, "500": 0.76 }
+    register_mix:     { pulp: 0.70, mid: 0.26, literary: 0.04 }
+    pay_threshold_shift: -0.12
+    hooks: [H2, H5, H11, H8]
+    dealbreakers: [D2, D9, D15]
+    pay_psychology: "Skips routine cliffhanger gates and spends heavily at true-status reveals. The most pay-selective region."
+    pay_voice: "You let ordinary cliffhangers go without much thought, but you will spend real money to reach the moment someone finally learns who this person actually is."
+    churn_triggers:
+      - "Hard-won status is lost with no path back."
+      - "Progression stalls for fifteen or more episodes."
+      - "The protagonist defers to incompetent authority out of unearned respect."
+    anti_stereotype:
+      share: 0.10
+      label: "villain-perspective-loyal"
+      note: "Prefers the antagonist's chapters and stays for their depth even when the hero's rise stalls."
+
+  - id: household-catharsis-devotees
+    label: "Household-Catharsis Devotees"
+    evidence: T-B
+    evidence_note: >
+      Daily family-serial consumption is a dominant adjacent-format habit for this audience and
+      we assume it transfers to audio family drama. STRAWMAN in the source ontology — the chart
+      and review evidence for the transfer has not been collected. Treat every number here as
+      an owned hypothesis, and attack this region first.
+    drivers: { belonging: high, catharsis: high, hope: med }
+    narrative_patience:     { dist: beta, alpha: 5, beta: 3 }
+    exploration_propensity: { dist: beta, alpha: 2.5, beta: 5 }
+    commitment_mix:   { "20": 0.05, "100": 0.25, "500": 0.70 }
+    register_mix:     { pulp: 0.62, mid: 0.34, literary: 0.04 }
+    pay_threshold_shift: -0.05
+    style_tags: [family_drama]
+    hooks: [H7, H11, H3]
+    dealbreakers: [D4, D11, D2]
+    pay_psychology: "Pays at the gate before a public vindication scene."
+    pay_voice: "You pay to watch the vindication happen in front of the people who need to see it."
+    churn_triggers:
+      - "The wronged lead stays a doormat with no vindication cycle."
+      - "A sympathetic family member is permanently destroyed."
+      - "The household dissolves with no hope of reunion."
+    anti_stereotype:
+      share: 0.15
+      label: "villainess-POV-preference"
+      note: "Actively wants the scheming woman's point of view and drops sanitised, conflict-free family stories."
+
+  - id: slow-burn-comfort-seekers
+    label: "Slow-Burn Comfort Seekers"
+    evidence: T-B
+    evidence_note: >
+      "Cozy", "safe" and "relaxing" recur in store reviews for the format, and long-running
+      low-conflict serials retain in adjacent formats. The source ontology weights this region
+      most heavily in US romance; in Indian markets it is smaller and skews to bedtime.
+    drivers: { comfort: high, escapism: med, belonging: med }
+    narrative_patience:     { dist: beta, alpha: 6, beta: 2.5 }
+    exploration_propensity: { dist: beta, alpha: 2, beta: 5 }
+    commitment_mix:   { "20": 0.08, "100": 0.62, "500": 0.30 }
+    register_mix:     { pulp: 0.26, mid: 0.42, literary: 0.32 }
+    pay_threshold_shift: 0.08
+    style_tags: [romance_centric]
+    hooks: [H6, H9, H15]
+    dealbreakers: [D7, D13, D1]
+    pay_psychology: "The one region that pays for a resolved epilogue — it inverts the platform-default cliffhanger gate, which is why D6 excludes it."
+    pay_voice: "You pay for the episode that settles things — the confession, the reunion, the quiet ending. Being hung on a crisis does not make you spend; it makes you tired."
+    churn_triggers:
+      - "A tonal shift into danger or tragedy."
+      - "Sustained emotional volatility."
+      - "The central relationship turns toxic."
+    anti_stereotype:
+      share: 0.15
+      label: "ambition-required"
+      note: "Stops finding it cozy if the protagonist has no ambition or interest outside the relationship."
+
+  - id: tier1-aspirational-escapists
+    label: "Tier-1 Aspirational Escapists"
+    evidence: T-B
+    evidence_note: >
+      Urban listeners over-index on career and modern-relationship narratives and on code-mixed
+      register in adjacent media; that office-politics-plus-upward-mobility is the metro core is
+      our hypothesis. STRAWMAN in the source ontology.
+    drivers: { identity: high, wish_fulfillment: high, escapism: med }
+    narrative_patience:     { dist: beta, alpha: 4, beta: 3.5 }
+    exploration_propensity: { dist: beta, alpha: 6, beta: 2.5 }
+    commitment_mix:   { "20": 0.12, "100": 0.58, "500": 0.30 }
+    register_mix:     { pulp: 0.22, mid: 0.56, literary: 0.22 }
+    pay_threshold_shift: 0.04
+    hooks: [H11, H13, H2]
+    dealbreakers: [D2, D9, D12]
+    pay_psychology: "Pays at vindication reveals like the Status region but less intensely; ignores pure-romance gates."
+    pay_voice: "You pay when the reveal is professional — the moment the room reassesses someone. A gate on a purely romantic beat you scroll straight past."
+    churn_triggers:
+      - "The lead's ambition dissolves into pure romance."
+      - "The setting turns regressive or traditional without irony."
+      - "Stakes shrink to household-only."
+    anti_stereotype:
+      share: 0.15
+      label: "weekend-epic-switcher"
+      note: "Unwinds with full-fantasy power epics — the modern-setting loyalty is weeknight-only."
+
+  - id: high-churn-thrill-chasers
+    label: "High-Churn Thrill Chasers"
+    evidence: T-C
+    evidence_note: >
+      Shock-value UA creatives — cheating, sudden death, betrayal — are a persistent
+      high-volume pattern in the ad library, which implies a fast-hit audience worth modelling.
+      The source ontology evidences this region for US romance and other international markets
+      and does NOT claim it for India. Any Indian-market weight is this team's hypothesis and
+      the least defensible number in the file. The ontology's prior draft also carried a
+      "massive day-0 churner volume" claim, deleted as internal telemetry nobody here has.
+    drivers: { catharsis: high, escapism: high, justice_seeking: med }
+    narrative_patience:     { dist: beta, alpha: 1.5, beta: 8 }
+    exploration_propensity: { dist: beta, alpha: 7, beta: 2 }
+    commitment_mix:   { "20": 0.74, "100": 0.22, "500": 0.04 }
+    register_mix:     { pulp: 0.84, mid: 0.14, literary: 0.02 }
+    pay_threshold_shift: 0.18
+    style_tags: [thrill_seeking]
+    hooks: [H1, H10, H12]
+    dealbreakers: [D3, D13, D6]
+    pay_psychology: "Pays only under extreme life-or-death cliffhanger pressure, and grudgingly. Lowest conversion of any region."
+    pay_voice: "You almost never pay. Only a genuine life-or-death cliffhanger gets money out of you, and you resent it afterwards."
+    churn_triggers:
+      - "Any pure-downtime episode."
+      - "The pacing stabilises."
+      - "More than a few minutes of exposition without a twist."
+    anti_stereotype:
+      share: 0.10
+      label: "single-trope-extended-stay"
+      note: "Will blow past their own 20-episode tolerance and stay 100+ episodes for one specific trope done right."
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Combinations that are incoherent rather than merely rare. A skeleton that trips
+# one is rejected and resampled, so no population contains a listener nobody
+# could argue is real. Rare-but-coherent combinations are the opposite case and
+# are preserved deliberately — see each region's `anti_stereotype`.
+# ─────────────────────────────────────────────────────────────────────────────
+invalid_combinations:
+  - note: "A 20-episode commitment cannot hold a 500-episode epic preference."
+    commitment_max: 20
+    region_in: [status-progression-loyalists]
+  - note: "Near-zero patience cannot coexist with a literary register preference."
+    patience_max: 0.2
+    register_in: [literary]
+  - note: "A listener who never pays and never churns exerts no pressure in either direction."
+    pay_threshold_max: 0.03
+    churn_sensitivity_min: 0.97

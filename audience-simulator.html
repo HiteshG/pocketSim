@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audience Simulator — Technical &amp; Product Specification</title>
+<style>
+  :root{
+    --bg:#fbfaf8;
+    --panel:#ffffff;
+    --ink:#1b1d21;
+    --ink-2:#4a4f57;
+    --ink-3:#767c86;
+    --line:#e4e2dd;
+    --line-2:#efedE8;
+    --accent:#3d5a80;
+    --accent-soft:#eef2f7;
+    --warn:#8a5a2b;
+    --warn-soft:#fbf3e8;
+    --good:#2f6b4f;
+    --good-soft:#eef5f1;
+    --code-bg:#f5f4f1;
+    --radius:10px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    font-size:16px;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .wrap{
+    display:grid;
+    grid-template-columns:238px minmax(0,1fr);
+    gap:56px;
+    max-width:1180px;
+    margin:0 auto;
+    padding:0 32px 120px;
+  }
+
+  /* ---------- sidebar ---------- */
+  nav{
+    position:sticky;
+    top:0;
+    align-self:start;
+    max-height:100vh;
+    overflow-y:auto;
+    padding:44px 0 40px;
+  }
+  nav .navlabel{
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-3);
+    font-weight:600;
+    margin-bottom:14px;
+  }
+  nav ol{list-style:none;margin:0;padding:0;counter-reset:nav;}
+  nav li{counter-increment:nav;}
+  nav a{
+    display:block;
+    padding:6px 10px 6px 30px;
+    position:relative;
+    font-size:13.5px;
+    line-height:1.4;
+    color:var(--ink-2);
+    text-decoration:none;
+    border-radius:6px;
+    transition:background .12s,color .12s;
+  }
+  nav a::before{
+    content:counter(nav);
+    position:absolute;
+    left:9px;
+    color:var(--ink-3);
+    font-variant-numeric:tabular-nums;
+    font-size:12px;
+  }
+  nav a:hover{background:var(--accent-soft);color:var(--accent);}
+
+  /* ---------- header ---------- */
+  header{padding:56px 0 34px;border-bottom:1px solid var(--line);margin-bottom:44px;}
+  .eyebrow{
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);font-weight:650;margin-bottom:14px;
+  }
+  h1{
+    font-size:40px;line-height:1.12;letter-spacing:-.022em;
+    margin:0 0 18px;font-weight:660;
+  }
+  .lede{font-size:17.5px;color:var(--ink-2);max-width:62ch;margin:0 0 26px;}
+  .meta{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    font-size:12px;padding:4px 11px;border-radius:100px;
+    background:var(--panel);border:1px solid var(--line);color:var(--ink-2);
+  }
+  .chip b{font-weight:600;color:var(--ink);}
+
+  /* ---------- typography ---------- */
+  section{scroll-margin-top:24px;padding-top:22px;}
+  h2{
+    font-size:13px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--accent);font-weight:650;
+    margin:52px 0 8px;padding-bottom:0;
+  }
+  h2 .num{color:var(--ink-3);margin-right:10px;font-variant-numeric:tabular-nums;}
+  h3{font-size:25px;line-height:1.25;letter-spacing:-.014em;margin:0 0 20px;font-weight:640;}
+  h4{font-size:16.5px;margin:34px 0 10px;font-weight:640;letter-spacing:-.005em;}
+  p{margin:0 0 16px;max-width:70ch;}
+  ul,ol{margin:0 0 16px;padding-left:22px;max-width:70ch;}
+  li{margin-bottom:7px;}
+  strong{font-weight:640;}
+  a{color:var(--accent);}
+  hr{border:0;border-top:1px solid var(--line);margin:44px 0;}
+
+  code{
+    font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    font-size:.875em;background:var(--code-bg);
+    padding:2px 5px;border-radius:4px;color:#2c3138;
+  }
+  pre{
+    background:var(--code-bg);border:1px solid var(--line);
+    border-radius:var(--radius);padding:17px 19px;overflow-x:auto;
+    font-size:13px;line-height:1.6;margin:0 0 20px;
+  }
+  pre code{background:none;padding:0;font-size:inherit;}
+
+  /* ---------- pull quote ---------- */
+  .pull{
+    border-left:3px solid var(--accent);
+    background:var(--accent-soft);
+    padding:18px 22px;border-radius:0 var(--radius) var(--radius) 0;
+    margin:0 0 22px;max-width:70ch;
+  }
+  .pull p{margin:0;font-size:17px;color:#25313f;}
+  .pull p + p{margin-top:12px;}
+
+  /* ---------- callouts ---------- */
+  .note{
+    border:1px solid var(--line);background:var(--panel);
+    border-radius:var(--radius);padding:16px 19px;margin:0 0 22px;max-width:70ch;
+  }
+  .note .tag{
+    font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;
+    font-weight:650;display:block;margin-bottom:7px;color:var(--ink-3);
+  }
+  .note p:last-child{margin-bottom:0;}
+  .note.warn{border-color:#e8d9c2;background:var(--warn-soft);}
+  .note.warn .tag{color:var(--warn);}
+  .note.good{border-color:#cfe3d8;background:var(--good-soft);}
+  .note.good .tag{color:var(--good);}
+
+  /* ---------- tables ---------- */
+  .tablewrap{overflow-x:auto;margin:0 0 24px;}
+  table{
+    border-collapse:collapse;width:100%;font-size:14px;
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);overflow:hidden;
+  }
+  th{
+    text-align:left;font-weight:620;font-size:11px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);
+    padding:11px 14px;background:#f7f6f3;
+    border-bottom:1px solid var(--line);white-space:nowrap;
+  }
+  td{padding:11px 14px;border-bottom:1px solid var(--line-2);vertical-align:top;color:var(--ink-2);}
+  td:first-child{color:var(--ink);font-weight:520;}
+  tbody tr:last-child td{border-bottom:0;}
+  tbody tr:hover td{background:#fcfbf9;}
+  .num-col{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .rec td{background:var(--accent-soft) !important;}
+  .rec td:first-child{color:var(--accent);font-weight:640;}
+
+  /* ---------- diagram ---------- */
+  .diagram{
+    border:1px solid var(--line);background:var(--panel);
+    border-radius:var(--radius);padding:26px;margin:0 0 24px;
+  }
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;}
+  .stage{
+    flex:1 1 130px;min-width:130px;padding:14px 15px;
+    border:1px solid var(--line);border-radius:8px;background:#fcfbf9;
+  }
+  .stage .st{
+    font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent);font-weight:650;margin-bottom:7px;
+  }
+  .stage .sd{font-size:12.5px;color:var(--ink-2);line-height:1.5;}
+  .arrow{
+    align-self:center;padding:0 9px;color:var(--ink-3);
+    font-size:16px;flex:0 0 auto;
+  }
+  .branch{
+    margin-top:16px;padding-top:16px;border-top:1px dashed var(--line);
+    display:flex;gap:14px;flex-wrap:wrap;
+  }
+  .branch .stage{background:#f7f6f3;border-style:dashed;}
+  .branch .stage .st{color:var(--ink-3);}
+
+  /* ---------- layer boxes ---------- */
+  .layers{display:flex;flex-direction:column;gap:10px;margin:0 0 24px;}
+  .layer{
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:16px 19px;background:var(--panel);
+  }
+  .layer.req{border-left:3px solid var(--accent);}
+  .layer.opt{border-left:3px solid var(--line);border-style:dashed;background:#faf9f7;}
+  .layer h5{
+    margin:0 0 6px;font-size:14px;font-weight:640;
+    display:flex;align-items:center;gap:10px;
+  }
+  .layer .badge{
+    font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+    padding:2.5px 8px;border-radius:100px;font-weight:650;
+  }
+  .layer.req .badge{background:var(--accent);color:#fff;}
+  .layer.opt .badge{background:#e9e7e2;color:var(--ink-3);}
+  .layer p{margin:0;font-size:13.5px;color:var(--ink-2);}
+  .plus{text-align:center;color:var(--ink-3);font-size:15px;margin:-2px 0;}
+
+  /* ---------- footer ---------- */
+  footer{
+    margin-top:64px;padding-top:26px;border-top:1px solid var(--line);
+    font-size:13px;color:var(--ink-3);
+  }
+  footer a{color:var(--ink-2);}
+
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr;gap:0;padding:0 22px 80px;}
+    nav{position:static;max-height:none;padding:30px 0 0;
+        border-bottom:1px solid var(--line);margin-bottom:8px;}
+    nav ol{columns:2;column-gap:16px;}
+    h1{font-size:31px;}
+    .arrow{display:none;}
+    .flow{flex-direction:column;gap:8px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<nav>
+  <div class="navlabel">Contents</div>
+  <ol>
+    <li><a href="#thesis">Thesis</a></li>
+    <li><a href="#scope">Scope</a></li>
+    <li><a href="#value">Value model</a></li>
+    <li><a href="#data">Data model</a></li>
+    <li><a href="#frameworks">Framework evaluation</a></li>
+    <li><a href="#arch">Architecture</a></li>
+    <li><a href="#plan">Implementation plan</a></li>
+    <li><a href="#cost">Cost model</a></li>
+    <li><a href="#validation">Validation</a></li>
+    <li><a href="#risks">Risks</a></li>
+    <li><a href="#sources">Sources</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<header>
+  <div class="eyebrow">Pocket FM · Draft v1 · Pre-build spec</div>
+  <h1>Audience Simulator</h1>
+  <p class="lede">Thousands of synthetic listeners consume a serialized story episode by episode, emitting behavioural decisions that roll up into retention curves, paywall placement, and drop-off surgery — before a single episode goes into production.</p>
+  <div class="meta">
+    <span class="chip"><b>Date</b> 25 Jul 2026</span>
+    <span class="chip"><b>Engine</b> Bespoke core + optional OASIS social layer</span>
+    <span class="chip"><b>Model</b> claude-opus-5</span>
+    <span class="chip"><b>Full-run cost</b> ~$560</span>
+  </div>
+</header>
+
+<!-- ============ 1 ============ -->
+<section id="thesis">
+  <h2><span class="num">01</span>Thesis</h2>
+  <h3>Capture decisions, not opinions</h3>
+
+  <p>Most "AI audience simulator" concepts produce <strong>opinions</strong>. Pocket FM does not monetize opinions. It monetizes one behaviour:</p>
+
+  <div class="pull">
+    <p>Did the listener open the next episode, and did they spend coins to do it?</p>
+  </div>
+
+  <p>Therefore the reaction primitive this system captures must be <strong>behavioural and episode-indexed</strong>, not evaluative. "8,000 simulated users rated this 4.2/5" is a vanity number. "Episode 14 loses 22% of the Tier-2 male revenge-fantasy cohort at the 4-minute mark, and the rewrite recovers 9 points" is a production decision.</p>
+
+  <p>The second half of the thesis is the part that is genuinely defensible:</p>
+
+  <div class="pull">
+    <p>Real user data tells you what happened. Simulation tells you what <em>would have</em> happened.</p>
+  </div>
+
+  <p>You cannot A/B test a story in reality — you release it once. Counterfactuals are the only thing simulation gives you that analytics cannot, and they are the reason the tool earns a permanent place in the pipeline rather than being a one-off experiment.</p>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="scope">
+  <h2><span class="num">02</span>Scope</h2>
+  <h3>What v1 does and deliberately does not do</h3>
+
+  <h4>In scope</h4>
+  <ul>
+    <li>Ingest a serialized audio-fiction story, episode by episode.</li>
+    <li>Instantiate N synthetic listeners with cohort-realistic profiles.</li>
+    <li>Run each listener through the episode sequence, capturing a structured behavioural decision at every boundary.</li>
+    <li>Aggregate into retention, willingness-to-pay, attention-drop, and suspense metrics.</li>
+    <li>Support <strong>re-simulation</strong> of edited episodes to produce counterfactual deltas.</li>
+    <li>Optionally model word-of-mouth propagation between listeners.</li>
+  </ul>
+
+  <h4>Out of scope (v1)</h4>
+  <ul>
+    <li><strong>Audio / VO simulation.</strong> Text scripts only. Prosody, voice-actor fit, and sound design are real retention factors and belong in v2.</li>
+    <li><strong>Absolute retention prediction.</strong> See §09.</li>
+    <li>Real user data integration beyond persona fitting.</li>
+  </ul>
+
+  <h4>Non-goals</h4>
+  <ul>
+    <li>Replacing the editorial team. This is a triage and prioritisation instrument — the writer keeps the decision.</li>
+    <li>Producing a "quality score." Quality is not the unit of value; continuation is.</li>
+  </ul>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="value">
+  <h2><span class="num">03</span>Value model</h2>
+  <h3>What to extract, and which decision each roll-up moves</h3>
+
+  <h4>The four extraction primitives</h4>
+  <p>Captured per persona, per episode. Everything else is diagnostic colour.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>#</th><th>Primitive</th><th>Question asked</th><th>Type</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Continue / drop</td><td>Would you open the next episode? Why?</td><td>boolean + reason</td></tr>
+      <tr><td>2</td><td>Pay / don't pay</td><td>If the paywall were here, would you spend coins?</td><td>boolean + reason</td></tr>
+      <tr><td>3</td><td>Attention drop</td><td>At which beat did you check out?</td><td>beat ref | null</td></tr>
+      <tr><td>4</td><td>Expectation</td><td>What do you think happens next?</td><td>free text</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <span class="tag">Why 1 and 2 must stay separate</span>
+    <p>Enjoyment and willingness-to-pay diverge constantly. A listener can love an episode and refuse to pay; a listener can find an episode mediocre and pay because the cliffhanger is unbearable. Collapsing them into one "satisfaction" number destroys the signal that matters.</p>
+  </div>
+
+  <h4>Roll-ups and the decisions they move</h4>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Roll-up</th><th>Built from</th><th>Decision it moves</th><th>Owner</th></tr></thead>
+    <tbody>
+      <tr><td>Simulated retention curve</td><td>#1 across episodes</td><td>Kill / greenlight at script stage instead of after 60 episodes of production spend</td><td>Content</td></tr>
+      <tr><td>Paywall placement</td><td>#1 × #2</td><td>Revenue-maximising gate episode — currently heuristic, tuned over weeks of live data</td><td>Monetisation</td></tr>
+      <tr><td>Drop-off surgery</td><td>#3</td><td>Which beats in which episodes to rewrite</td><td>Writers' room</td></tr>
+      <tr><td>Segment–story fit</td><td>#1 by cohort</td><td>Pre-launch ad targeting map — lands on the largest cost line</td><td>Marketing / UA</td></tr>
+      <tr><td>Hook ranking</td><td>#1 on ep. 1 only</td><td>Which of 20 opening variants ships (and becomes the ad creative)</td><td>Content + Marketing</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>Why the economics compound.</strong> Pocket FM's model is paid acquisition → free episodes → paywall → coin spend across 100+ episodes. Every point on the retention curve is multiplied by every subsequent episode's monetisation. A 3-point improvement at episode 10 propagates through the entire tail. This is why script-stage intervention beats post-launch optimisation.</p>
+
+  <p><strong>Why segment–story fit lands on the P&amp;L.</strong> Tier-2 Indian male listeners on revenge / system-progression fantasy behave nothing like US female listeners on billionaire romance. A pre-launch cohort fit map means UA spend is targeted before a rupee is burned on users who churn before they ever pay. Mistargeted CAC is the most expensive form of waste in this business.</p>
+
+  <h4>Two non-obvious metrics</h4>
+  <p>These make the pitch memorable, because no analytics dashboard can produce them — real users never tell you what they expected.</p>
+
+  <div class="note good">
+    <span class="tag">Prediction entropy</span>
+    <p>Ask every persona what happens next, then compute the variance of their predictions. Low entropy plus high stakes means the story is predictable — and predictable is the death of the next-episode open. High entropy plus high stakes is a working cliffhanger. This is a <strong>quantitative suspense metric</strong>, and it cannot be derived from behavioural logs.</p>
+  </div>
+
+  <div class="note good">
+    <span class="tag">Craving delta</span>
+    <p><code>craving_delta = craving_at_end − craving_at_midpoint</code></p>
+    <p>That gap — not enjoyment — predicts the next tap. A satisfying, cleanly-resolved episode is a <strong>churn event</strong> on a serialized platform. This catches the episode that is <em>too well-resolved</em>: a failure mode completely invisible to satisfaction ratings.</p>
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="data">
+  <h2><span class="num">04</span>Data model</h2>
+  <h3>Persona, reaction, and carried state</h3>
+
+  <h4>Persona schema</h4>
+  <p>Adapted from the OASIS profile schema, extended with Pocket FM behavioural attributes. Starred fields should be <strong>fitted from real cohort logs</strong>, not invented — that is the moat (§09).</p>
+
+<pre><code>{
+  "persona_id": "pf_00123",
+  "realname": "Rakesh Kumar",
+  "age": 27,
+  "gender": "male",
+  "country": "IN",
+  "city_tier": 2,
+  "profession": "Delivery partner",
+  "persona": "Listens during 2-hour daily commute. Grew up on
+              mythological serials...",
+  "interested_topics": ["revenge", "system-progression", "mythology"],
+
+  "genre_affinity":        { "revenge": 0.9, "romance": 0.2 },   // ★
+  "avg_daily_minutes":     78,                                    // ★
+  "coin_spend_tier":       "medium",                              // ★
+  "historical_completion": 0.34,                                  // ★
+  "churn_sensitivity":     0.7,                                   // ★
+  "pay_threshold":         0.55                                   // ★
+}</code></pre>
+
+  <h4>Reaction schema — enforced, not requested</h4>
+  <p>Free-text responses are not aggregatable. Every reaction is constrained via the Claude API's <code>output_config.format</code>, so the model <em>cannot</em> return an unparseable response.</p>
+
+<pre><code>{
+  "type": "object",
+  "properties": {
+    "will_continue":   { "type": "boolean" },
+    "continue_reason": { "type": "string"  },
+    "would_pay":       { "type": "boolean" },
+    "pay_reason":      { "type": "string"  },
+    "drop_beat":       { "type": ["string", "null"] },
+    "craving_mid":     { "type": "integer" },   // 1-10
+    "craving_end":     { "type": "integer" },   // 1-10
+    "next_prediction": { "type": "string"  },
+    "emotional_state": { "type": "string"  }
+  },
+  "required": ["will_continue","continue_reason","would_pay","pay_reason",
+               "drop_beat","craving_mid","craving_end","next_prediction",
+               "emotional_state"],
+  "additionalProperties": false
+}</code></pre>
+
+  <h4>Persistent state per persona</h4>
+  <p>Carried across episodes so the agent is a <em>listener following a story</em>, not a fresh reader of episode N. The rolling summary is per-persona — different listeners remember different things, and that divergence is part of the signal.</p>
+
+<pre><code>{
+  "persona_id": "pf_00123",
+  "episodes_heard": 14,
+  "active": true,
+  "dropped_at": null,
+  "story_summary": "Rolling 400-token summary of what this listener
+                    remembers...",
+  "character_sentiment": { "Arjun": 0.8, "Meera": -0.3 },
+  "unresolved_questions": ["Who killed the father?", "Is Meera the traitor?"],
+  "coins_spent": 240
+}</code></pre>
+
+  <h4>Storage</h4>
+  <p>SQLite for v1 — single file, zero ops, queryable. Three tables: <code>personas</code>, <code>reactions</code> (one row per persona × episode × run), and <code>runs</code> (story version, model, effort, timestamp).</p>
+  <p><code>run_id</code> is what makes counterfactuals work: the original and the rewrite are two runs over the same population, diffed on <code>episode_no</code>.</p>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="frameworks">
+  <h2><span class="num">05</span>Framework evaluation</h2>
+  <h3>Which repo's machinery is worth keeping</h3>
+
+  <div class="note warn">
+    <span class="tag">The framing that determines the answer</span>
+    <p>All five candidate repos are <strong>social network simulators</strong> — agents in a shared world, talking to each other, content propagating through a graph. That is not the shape of this problem.</p>
+    <p>The required primitive is a <strong>longitudinal panel study</strong>: N independent listeners each consume a fixed sequence, emitting a structured decision at every boundary. Agent-to-agent interaction is <em>optional</em> — it only matters for word-of-mouth and virality modelling. This mismatch is why none of them drop in.</p>
+  </div>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Repo</th><th>Core primitive</th><th>Scale</th><th>Persona model</th><th>Metric extraction</th><th>Licence</th><th>Effort</th></tr></thead>
+    <tbody>
+      <tr class="rec">
+        <td>camel-ai / OASIS</td><td>Twitter/Reddit feed + recsys</td><td>1M agents (validated)</td><td>Rich JSON schema</td><td><code>INTERVIEW</code> → SQLite <code>trace</code></td><td>Apache-2.0</td><td><strong>Medium</strong></td>
+      </tr>
+      <tr>
+        <td>DeepMind / Concordia</td><td>Game Master narrative sim</td><td>~4–20 agents</td><td>Deepest — components, assoc. memory</td><td>None — build it</td><td>Apache-2.0</td><td>High</td>
+      </tr>
+      <tr>
+        <td>AgentSociety</td><td>Urban society + mobility</td><td>~10k agents</td><td>Needs / emotion / cognition</td><td>Survey, interview, intervention, metrics — built in</td><td>Apache-2.0</td><td>Very high</td>
+      </tr>
+      <tr>
+        <td>666ghj / MiroFish</td><td>Ingest → persona-gen → OASIS → report</td><td>Inherits OASIS</td><td>Auto-generated from docs</td><td>Narrative report</td><td><strong>AGPL-3.0</strong></td><td>Medium + risk</td>
+      </tr>
+      <tr>
+        <td>amadad / mirofish-cli</td><td>English CLI fork of above</td><td>Inherits OASIS</td><td>Same</td><td><code>verdict.json</code> + confidence</td><td><strong>AGPL-3.0</strong></td><td>Low — demos</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4>OASIS — the best engine to build on</h4>
+  <p>Three things it provides that are genuinely expensive to rebuild:</p>
+  <ol>
+    <li><strong>The persona schema is already right.</strong> <code>realname, bio, persona, age, gender, mbti, country, profession, interested_topics</code> maps almost one-to-one onto Pocket FM cohort attributes.</li>
+    <li><strong><code>ActionType.INTERVIEW</code> is exactly the extraction primitive.</strong> Prompt and response land in the <code>trace</code> table as JSON, keyed by <code>user_id</code> and timestamp — a queryable per-agent, per-episode instrument with zero plumbing.</li>
+    <li><strong>Published cost model at scale.</strong> 100 agents × 1 step ≈ 336k input / 17k output tokens. The only repo here that publishes real cost figures — necessary because "5,000 agents × 60 episodes" needs a rupee number in the deck.</li>
+  </ol>
+
+  <p>Four required modifications:</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>#</th><th>Change</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Bypass the recsys</td><td>The interest-based recommender decides who sees what. Episode delivery must be deterministic — every active agent gets episode N.</td></tr>
+      <tr><td>2</td><td>Add a <code>drop</code> state</td><td>OASIS has no concept of an agent leaving. Needed so the retention curve is monotonic and cost falls as the cohort thins.</td></tr>
+      <tr><td>3</td><td>Force structured output</td><td>Constrain interviews to the §04 schema. Free text is not aggregatable.</td></tr>
+      <tr><td>4</td><td>Fix memory horizon</td><td>Agent memory is social-media-scoped, not "I've followed this story for 40 episodes."</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p><strong>Fork it — don't <code>pip install</code></strong> — since <code>recsys.py</code> and the agent lifecycle both need patching. Roughly 1–2 weeks to a working v1.</p>
+
+  <h4>Concordia — right depth, wrong tier</h4>
+  <p>The Game Master architecture is the best available model of <em>a mind encountering a situation</em>: situation assessment → identity → contextual action, with associative memory. For answering <strong>why</strong> episode 14 loses people, it produces far better reasoning than a one-shot rating.</p>
+  <p>But it is built for four friends in a snowed-in pub. Every agent-step is a chain of LLM calls — roughly 10–50× the per-agent cost of a single-call harness. Thousands of agents × 60 episodes is not viable, and there is no population generator, metrics layer, or DB output.</p>
+  <p><strong>Use it as tier 2.</strong> The wide scan tells you <em>where</em> the curve breaks; 20 Concordia agents through episodes 12–16 tell you <em>why</em>, in language a writer can act on.</p>
+
+  <h4>AgentSociety — steal the methodology, skip the framework</h4>
+  <p>Best research instrumentation of the five: interviews, surveys, interventions, and metric recording as first-class utilities. The <code>intervention</code> primitive is precisely the rewrite-and-resimulate counterfactual, already designed.</p>
+  <p>The cost is infrastructure — Ray, MQTT, PostgreSQL, and a heritage of urban mobility simulation that would be 90% deleted. You would pay a distributed-systems tax on a problem that is embarrassingly parallel over independent agents. <strong>Copy the API design; do not adopt the runtime.</strong></p>
+
+  <h4>MiroFish — closest analogue, licence blocker</h4>
+  <p>An application layer on OASIS: seed documents → GraphRAG knowledge graph → entity extraction → auto-generated personas → simulation → ReportAgent. Hit #1 on GitHub trending in early 2026 with 30k+ stars. Their showcase demo feeds the first 80 chapters of <em>Dream of the Red Chamber</em> in to predict the ending — this exact use case, minus the business instrumentation.</p>
+  <div class="note warn">
+    <span class="tag">Two blockers</span>
+    <p><strong>AGPL-3.0.</strong> If Pocket FM runs this as an internal tool exposed over a network, the AGPL network clause is a legal conversation, not an engineering one. Flag it before anyone gets attached.</p>
+    <p><strong>Wrong output.</strong> MiroFish predicts <em>what happens in the world</em>. We need to predict <em>whether the listener taps next episode</em>. The plumbing is right; the metric is absent.</p>
+  </div>
+  <p>Its real value is as a reference architecture and a credible name-drop: <em>"MiroFish showed a swarm can reason about narrative causality; we're pointing that at retention and coin spend."</em></p>
+
+  <h4>mirofish-cli — this week's demo</h4>
+  <p>English fork, CLI-first, runs on <code>claude-cli</code> / <code>codex-cli</code> subscriptions rather than metered API keys, emits a machine-readable <code>verdict.json</code> plus SVG timelines. Same AGPL constraint; the provider restriction that makes it cheap for a demo makes it unusable for a 5,000-agent run. <strong>A probe, not a foundation</strong> — point it at the first five episodes tonight for a concrete deck artifact by Monday.</p>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="arch">
+  <h2><span class="num">06</span>Architecture</h2>
+  <h3>A bespoke core, with the social layer bought separately</h3>
+
+  <div class="layers">
+    <div class="layer req">
+      <h5><span class="badge">Required</span> Bespoke core loop — ~300 lines</h5>
+      <p>Independent panel study. Fully parallel, schema-enforced, no recsys to fight, no AGPL, full control over every token. Produces retention, pay curve, drop-beat map, prediction entropy, craving delta.</p>
+    </div>
+    <div class="plus">+</div>
+    <div class="layer opt">
+      <h5><span class="badge">Optional</span> OASIS social layer</h5>
+      <p>Word-of-mouth propagation, review dynamics, virality coefficient per cohort. The one thing a bespoke harness cannot give you — and the only reason to stay on the fork.</p>
+    </div>
+  </div>
+
+  <div class="note warn">
+    <span class="tag">The honest recommendation</span>
+    <p>OASIS earns its place <em>only</em> when you want the social layer. Go in knowing you are buying the social graph and the persona/interview scaffolding — <strong>not</strong> the simulation loop. If you find yourself deleting the feed, the recsys, and the follow graph, stop and write the 300 lines.</p>
+  </div>
+
+  <h4>The core loop</h4>
+<pre><code>for persona in personas:
+    state = init_state(persona)
+    for episode in episodes:
+        reaction = await llm(
+            model="claude-opus-5",
+            system=[{"type": "text",
+                     "text": EPISODE_PROMPT(episode),           # cached prefix
+                     "cache_control": {"type": "ephemeral", "ttl": "1h"}}],
+            messages=[{"role": "user",
+                       "content": persona_block(persona, state)}],
+            output_config={"format": {"type": "json_schema",
+                                      "schema": REACTION_SCHEMA}},
+        )
+        state = update(state, reaction)
+        record(run_id, persona.id, episode.no, reaction)
+        if not reaction.will_continue:
+            state.active = False
+            break</code></pre>
+
+  <h4>Full pipeline</h4>
+  <div class="diagram">
+    <div class="flow">
+      <div class="stage"><div class="st">Ingest</div><div class="sd">Episode corpus, beat-mapped</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="st">Population</div><div class="sd">OASIS schema, fitted from cohort logs</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="st">Delivery</div><div class="sd">Deterministic, recsys bypassed, attrition-aware</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="st">Instrument</div><div class="sd">Schema-constrained JSON reactions</div></div>
+      <div class="arrow">→</div>
+      <div class="stage"><div class="st">Aggregate</div><div class="sd">Retention · pay curve · drop-beat map · entropy</div></div>
+    </div>
+    <div class="branch">
+      <div class="stage"><div class="st">Tier 2 · optional</div><div class="sd">Concordia deep-dive on the three worst episodes — the <em>why</em> behind the drop</div></div>
+      <div class="stage"><div class="st">Social · optional</div><div class="sd">OASIS graph for word-of-mouth propagation and virality</div></div>
+    </div>
+  </div>
+
+  <h4>Model and API decisions</h4>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Decision</th><th>Choice</th><th>Rationale</th></tr></thead>
+    <tbody>
+      <tr><td>Model</td><td><code>claude-opus-5</code></td><td>Default. Best reasoning-per-token for persona simulation. Model tier is the single largest cost lever if a trade-down is needed.</td></tr>
+      <tr><td>Thinking</td><td><code>{"type":"adaptive"}</code></td><td>On by default on Opus 5. Persona reasoning benefits from it.</td></tr>
+      <tr><td>Effort</td><td><code>medium</code> (sweep first)</td><td>Sweep low / medium / high on a 200-agent pilot. Low and medium are unusually strong on Opus 5 — the second-largest cost lever.</td></tr>
+      <tr><td>Output</td><td><code>output_config.format</code></td><td>Non-negotiable. Guarantees parseable, aggregatable reactions.</td></tr>
+      <tr><td>Caching</td><td>Episode text as cached system prefix, 1h TTL</td><td>Episode is identical across all N agents. Largest single cost saving.</td></tr>
+      <tr><td>Batching</td><td>Message Batches API</td><td>50% off all token usage. Simulation is not latency-sensitive.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note">
+    <span class="tag">Two implementation details that decide whether caching works</span>
+    <p><strong>Placement.</strong> Render order is <code>tools → system → messages</code>. Put the episode text and instructions in <code>system</code> with <code>cache_control</code> (identical across agents) and the persona plus state in <code>messages</code> (varies per agent). Cache-by-episode beats cache-by-persona because the episode block (~2,400 tokens) dwarfs the persona block (~200).</p>
+    <p><strong>Concurrency.</strong> A cache entry only becomes readable once the first response begins streaming. Fire <em>one</em> request per episode, await first token, then fan out the remaining N−1 — otherwise all N pay full price.</p>
+  </div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="plan">
+  <h2><span class="num">07</span>Implementation plan</h2>
+  <h3>Seven phases, with the go/no-go gate at phase 4</h3>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Phase</th><th>Duration</th><th>Deliverable</th><th>Exit criterion</th></tr></thead>
+    <tbody>
+      <tr><td>0 · Probe</td><td>2 days</td><td>Run <code>mirofish-cli</code> on episodes 1–5; produce a <code>verdict.json</code> artifact for the deck</td><td>A concrete artifact exists, not a described capability</td></tr>
+      <tr><td>1 · Core loop</td><td>1 week</td><td>Bespoke harness: 200 personas × 10 episodes, schema-enforced, SQLite output</td><td>Retention curve renders; costs measured, not estimated</td></tr>
+      <tr><td>2 · Sweep</td><td>2 days</td><td>Effort sweep low/medium/high; verify <code>cache_read_input_tokens</code> &gt; 0</td><td>Cost per agent-episode known to ±15%</td></tr>
+      <tr><td>3 · Persona fitting</td><td>1 week</td><td>Replace invented personas with cohorts fitted from real listening logs</td><td>Cohort distribution matches platform distribution</td></tr>
+      <tr class="rec"><td>4 · Backtest</td><td>1 week</td><td>Blind-simulate 20 library shows with known retention; report rank correlation</td><td><strong>Spearman ρ reported. Go / no-go gate.</strong></td></tr>
+      <tr><td>5 · Scale + counterfactual</td><td>1 week</td><td>5,000 personas × 60 episodes. Rewrite ep. N, re-run, report delta</td><td>Two <code>run_id</code>s diffable on <code>episode_no</code></td></tr>
+      <tr><td>6 · Tier 2 (opt.)</td><td>1 week</td><td>Concordia deep-dive on the three worst episodes</td><td>Writer-actionable prose explanation of one drop</td></tr>
+      <tr><td>7 · Social (opt.)</td><td>2 weeks</td><td>OASIS fork with WOM propagation on top of the core loop</td><td>Virality coefficient per cohort</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note warn">
+    <span class="tag">Critical path</span>
+    <p>Everything before phase 4 is speculation; everything after it is instrumentation. <strong>Do not scale before backtesting.</strong> If ρ comes back weak, the failure costs one week rather than a quarter.</p>
+  </div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="cost">
+  <h2><span class="num">08</span>Cost model</h2>
+  <h3>~$560 per full run, against a production budget orders of magnitude larger</h3>
+
+  <h4>Token assumptions per agent-episode</h4>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Component</th><th class="num-col">Tokens</th><th>Cacheable?</th></tr></thead>
+    <tbody>
+      <tr><td>Episode text (~1,800 words)</td><td class="num-col">2,400</td><td>Yes — shared across all agents</td></tr>
+      <tr><td>Instructions + schema</td><td class="num-col">500</td><td>Yes — shared</td></tr>
+      <tr><td>Persona block</td><td class="num-col">200</td><td>No — per agent</td></tr>
+      <tr><td>Rolling story state</td><td class="num-col">400</td><td>No — per agent</td></tr>
+      <tr><td><strong>Input total</strong></td><td class="num-col"><strong>3,500</strong></td><td>2,900 cacheable / 600 not</td></tr>
+      <tr><td>Output (structured JSON)</td><td class="num-col">250</td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p><strong>Volume.</strong> 5,000 personas × 60 episodes, with attrition. Assuming an average active-cohort fraction of ~0.35 across the run: <code>5,000 × 60 × 0.35 ≈ 105,000 agent-episodes</code>.</p>
+
+  <h4>Cost per full run — Claude Opus 5 ($5 / $25 per MTok)</h4>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Configuration</th><th class="num-col">Input</th><th class="num-col">Output</th><th class="num-col">Total</th></tr></thead>
+    <tbody>
+      <tr><td>Naive — no caching, no batch</td><td class="num-col">$1,838</td><td class="num-col">$656</td><td class="num-col"><strong>~$2,490</strong></td></tr>
+      <tr><td>+ prompt caching (episode prefix, 1h TTL)</td><td class="num-col">$469</td><td class="num-col">$656</td><td class="num-col"><strong>~$1,125</strong></td></tr>
+      <tr class="rec"><td>+ Message Batches API (50% off)</td><td class="num-col">$234</td><td class="num-col">$328</td><td class="num-col"><strong>~$560</strong></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="font-size:13.5px;color:var(--ink-3);">Caching maths: uncached input 105,000 × 600 = 63M tok @ $5/M = $315. Cached reads 105,000 × 2,900 = 304.5M tok @ $0.50/M (0.1×) = $152. Cache writes 60 × 2,900 = 174k tok @ $10/M (2× for 1h TTL) ≈ $2. Input total ≈ $469.</p>
+
+  <h4>Model tier comparison — with caching and batch</h4>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Model</th><th>Input / output per MTok</th><th class="num-col">Full run</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr class="rec"><td>Claude Opus 5</td><td>$5 / $25</td><td class="num-col"><strong>~$560</strong></td><td>Recommended default</td></tr>
+      <tr><td>Claude Sonnet 5</td><td>$3 / $15 &nbsp;($2 / $10 intro thru 31 Aug 2026)</td><td class="num-col">~$340 &nbsp;(~$225 intro)</td><td>Viable for the wide scan if pilot quality holds</td></tr>
+      <tr><td>Claude Haiku 4.5</td><td>$1 / $5</td><td class="num-col">~$115</td><td>Too shallow for persona reasoning — not recommended</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="note good">
+    <span class="tag">Cost per decision</span>
+    <p>At ~$560 per full run, a hook test of <strong>20 episode-1 variants against 5,000 personas costs roughly $9</strong> — one episode, no attrition. That is the cheapest, highest-frequency use case and the obvious wedge to demo.</p>
+    <p>Sixty episodes of production — writer, VO, sound design, QA — is a materially larger number than $560. That ratio is the pitch.</p>
+  </div>
+
+  <p>Model tier and effort level are the two cost levers available if the budget forces a trade. Validate any downgrade against the phase-4 backtest before adopting it — the whole instrument's credibility rests on rank correlation surviving.</p>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="validation">
+  <h2><span class="num">09</span>Validation</h2>
+  <h3>The backtest is what converts an idea into an instrument</h3>
+
+  <h4>Protocol</h4>
+  <ol>
+    <li>Request <strong>20 shows from the existing Pocket FM library</strong> with known, complete retention curves.</li>
+    <li>Withhold all outcome data from the simulation team.</li>
+    <li>Simulate each blind, using cohort-fitted personas.</li>
+    <li>Report <strong>Spearman rank correlation</strong> between simulated and actual retention at episodes 5, 10, 20, 40.</li>
+    <li>Hold out 5 of the 20; report held-out correlation separately.</li>
+  </ol>
+
+  <h4>Why rank correlation, not absolute accuracy</h4>
+  <p>LLM personas are systematically miscalibrated in ways that are well documented and <em>will</em> be raised in the room. They are agreeable. They over-engage. They do not get bored. They almost never spontaneously say "I'm dropping this."</p>
+
+  <div class="note warn">
+    <span class="tag">Pre-empt this before someone else does</span>
+    <p>Pitching <em>"we predict 41% retention at episode 20"</em> will get correctly torn apart. Pitch <strong>rankings and deltas</strong> — "Story A will out-retain Story B," "this rewrite improves episode 14 by X relative to the original." Relative comparisons survive persona miscalibration because the bias applies roughly uniformly and cancels in the difference. Report levels only after calibration against the backtest, as a fitted transform — never as a raw model output.</p>
+  </div>
+
+  <h4>The moat argument</h4>
+  <div class="pull">
+    <p>Anyone can prompt personas. Only Pocket FM can calibrate them against millions of real listening sessions.</p>
+  </div>
+  <p>Personas should be fitted from real cohort behaviour logs, not invented from imagination. This is the defensibility claim, and the natural bridge to the story-genome work — the fitted persona population is a reusable asset that gets more accurate with every show released.</p>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="risks">
+  <h2><span class="num">10</span>Risks</h2>
+  <h3>What kills this, and what it costs to find out</h3>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Risk</th><th>Severity</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Persona miscalibration — agents over-engage, never drop</td><td>High</td>
+        <td>Report rankings and deltas, not levels. Calibrate against the phase-4 backtest. Explicitly prompt for drop permission and reward honest churn in the schema.</td>
+      </tr>
+      <tr>
+        <td>Backtest fails — low rank correlation</td><td>High</td>
+        <td>This is the go/no-go gate, deliberately placed before scale spend. Failure costs one week, not a quarter.</td>
+      </tr>
+      <tr>
+        <td>AGPL contamination from MiroFish forks</td><td>Medium</td>
+        <td>Use MiroFish and mirofish-cli as reference and demo only. Build production on Apache-2.0 OASIS or bespoke. Legal sign-off before any AGPL code enters the internal tree.</td>
+      </tr>
+      <tr>
+        <td>Text-only ≠ audio — VO, pacing, sound design drive real retention</td><td>Medium</td>
+        <td>Scope explicitly to script-stage triage in v1. Position audio modelling as v2. Do not claim the simulation captures performance quality.</td>
+      </tr>
+      <tr>
+        <td>Overfitting to the backtest set</td><td>Medium</td>
+        <td>Hold out 5 of the 20 shows; report held-out correlation separately.</td>
+      </tr>
+      <tr>
+        <td>Organisational rejection — "AI can't judge stories"</td><td>Medium</td>
+        <td>Do not position as a judge. Position as a triage instrument that tells writers <em>where</em> to look. The writer keeps the decision.</td>
+      </tr>
+      <tr>
+        <td>Cost overrun at scale</td><td>Low</td>
+        <td>Caching plus batch reduces a naive run by ~78%. Effort sweep is a further lever. Verify <code>cache_read_input_tokens &gt; 0</code> in phase 2 — a silent cache invalidator (a timestamp or per-request ID inside the cached prefix) is the usual cause of a surprise bill.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="sources">
+  <h2><span class="num">11</span>Sources</h2>
+  <h3>Repositories, papers, and API references</h3>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Resource</th><th>URL</th></tr></thead>
+    <tbody>
+      <tr><td>camel-ai / OASIS</td><td><a href="https://github.com/camel-ai/oasis">github.com/camel-ai/oasis</a></td></tr>
+      <tr><td>OASIS documentation</td><td><a href="https://docs.oasis.camel-ai.org/introduction">docs.oasis.camel-ai.org/introduction</a></td></tr>
+      <tr><td>OASIS interview cookbook</td><td><a href="https://docs.oasis.camel-ai.org/cookbooks/twitter_interview">docs.oasis.camel-ai.org/cookbooks/twitter_interview</a></td></tr>
+      <tr><td>OASIS paper</td><td><a href="https://arxiv.org/abs/2411.11581">arxiv.org/abs/2411.11581</a></td></tr>
+      <tr><td>google-deepmind / concordia</td><td><a href="https://github.com/google-deepmind/concordia">github.com/google-deepmind/concordia</a></td></tr>
+      <tr><td>tsinghua-fib-lab / AgentSociety</td><td><a href="https://github.com/tsinghua-fib-lab/AgentSociety">github.com/tsinghua-fib-lab/AgentSociety</a></td></tr>
+      <tr><td>AgentSociety paper</td><td><a href="https://arxiv.org/html/2502.08691v1">arxiv.org/html/2502.08691v1</a></td></tr>
+      <tr><td>666ghj / MiroFish</td><td><a href="https://github.com/666ghj/MiroFish">github.com/666ghj/MiroFish</a></td></tr>
+      <tr><td>amadad / mirofish-cli</td><td><a href="https://github.com/amadad/mirofish-cli">github.com/amadad/mirofish-cli</a></td></tr>
+      <tr><td>MiroFish showcase</td><td><a href="https://sosamonbot-coder.github.io/mirofish-showcase/">sosamonbot-coder.github.io/mirofish-showcase</a></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h4>Claude API references — as of 25 July 2026</h4>
+  <ul>
+    <li><strong>Claude Opus 5</strong> — <code>claude-opus-5</code> — $5 / $25 per MTok, 1M context, 128K max output</li>
+    <li><strong>Claude Sonnet 5</strong> — <code>claude-sonnet-5</code> — $3 / $15 per MTok ($2 / $10 introductory through 31 Aug 2026)</li>
+    <li><strong>Prompt caching</strong> — cache reads ~0.1× input price; writes 1.25× (5-min TTL) or 2× (1-hour TTL)</li>
+    <li><strong>Message Batches API</strong> — 50% discount on all token usage</li>
+    <li><strong>Structured outputs</strong> — <code>output_config.format</code> with <code>json_schema</code></li>
+  </ul>
+</section>
+
+<footer>
+  Audience Simulator — Technical &amp; Product Specification · Draft v1 · 25 July 2026 · Pocket FM
+</footer>
+
+</main>
+</div>
+</body>
+</html>

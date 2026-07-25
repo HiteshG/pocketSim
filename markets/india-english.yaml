@@ -1,0 +1,465 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Market: India / English
+#
+# Deliberately NOT a translation of india-hindi. The genre taxonomy, cohort mix,
+# competitive set and price sensitivity are all different, because the audience is
+# different — metro-skewed, higher ARPU, and competing against Audible, Spotify
+# podcasts and Netflix rather than against Instagram reels and film songs.
+#
+# This file exists so `--market` is a real parameter and not decoration: running the
+# same script against both markets must produce different cohorts and a different
+# fit map. See the "provider/market parity" checks in the README.
+#
+# All values PROVISIONAL — hand-authored, not fitted from logs.
+# ─────────────────────────────────────────────────────────────────────────────
+
+market: india-english
+language: English
+script_system: latin
+reasoning_language: English
+
+currency: INR
+coin_pack_label: "99-coin pack"
+money_anchor: "a 99-coin pack costs about what one coffee at a chain cafe costs"
+
+alternatives:
+  - "a Spotify podcast"
+  - "an Audible audiobook"
+  - "a Netflix episode on the second screen"
+  - "Instagram reels"
+  - "a YouTube video essay"
+  - "music while working"
+  - "switching the audio off entirely to focus"
+
+genres:
+  - billionaire_romance
+  - dark_romance
+  - werewolf_shifter
+  - revenge_thriller
+  - campus_romance
+  - urban_fantasy
+  - crime_mystery
+  - corporate_drama
+
+cities_by_tier:
+  "1": [Bengaluru, Mumbai, Delhi, Hyderabad, Pune, Gurugram, Chennai, Noida, Kolkata]
+  "2": [Kochi, Chandigarh, Indore, Jaipur, Coimbatore, Bhubaneswar, Vizag, Mysuru]
+
+genre_noise: 0.15
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Discovery channel — how they arrived at THIS series. [T-C]
+#
+# Sits on the occasion axis because it is a fact about acquisition, not taste. It
+# earns its place by changing the continue decision at exactly the point the panel
+# was weakest: an ad-acquired listener has expectations set by a creative that
+# promised something specific, and churns hard when episode 3 is not that. A
+# friend-recommended listener extends more credit and blames themselves first.
+# Cohorts may override; this is the market default.
+discovery_mix:
+  ad: 0.42
+  in_app_recommendation: 0.30
+  browsing: 0.16
+  friend: 0.12
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Need model
+#
+# Same six need regions as every other market, imported from the shared file —
+# a region is platform identity, not a market's local invention. What differs
+# here is the JOIN: which regions each occasion cohort draws from. The resulting
+# marginal region shares are visibly different from india-hindi, which is the
+# point of `--market` being a real parameter on this axis too:
+#
+#            india-english        india-hindi
+#   comfort        24%                14%
+#   tier1          22%                10%
+#   thrill         20%                13%
+#   justice        17%                27%
+#   status         11%                20%
+#   household       7%                16%
+#
+# This market sits closest to the profile the source ontology evidences for US
+# romance — comfort-led, romance-dense, thrill-tolerant — which is why the two
+# regions weakest in Hindi are the two strongest here.
+# ─────────────────────────────────────────────────────────────────────────────
+
+ontology: _ontology
+
+# Only `register_mix` is overridable, and only where a market's language genuinely
+# moves the distribution. This audience competes against Audible and podcasts and
+# abandons anything that reads as translated, so the three most pulp-weighted
+# regions shift toward the middle register here. Everything else about a region —
+# drivers, banks, pay psychology — is platform identity and cannot be overridden.
+region_overrides:
+  justice-payoff-bingers:
+    register_mix: { pulp: 0.56, mid: 0.36, literary: 0.08 }
+  status-progression-loyalists:
+    register_mix: { pulp: 0.54, mid: 0.38, literary: 0.08 }
+  high-churn-thrill-chasers:
+    register_mix: { pulp: 0.70, mid: 0.26, literary: 0.04 }
+
+cohorts:
+
+  - id: metro-commuter-english
+    weight: 0.21
+    label: "Metro commuter, cab or metro rail"
+    occasion: >
+      45-70 minutes each way in a cab or on the metro, headphones on, phone in hand.
+      Reads and listens in English by default and will abandon a series that feels
+      translated rather than written in English.
+    session_pattern: binge
+    session_minutes:       { dist: lognormal, median: 50, sigma: 0.40, clamp: [10, 180] }
+    gap_hours:             { dist: normal, mean: 12, sd: 4, clamp: [2, 36] }
+    tenure_months:         { dist: exponential, mean: 8, clamp: [0.5, 42], integer: true }
+    age:                   { dist: normal, mean: 29, sd: 5, clamp: [20, 48], integer: true }
+    churn_sensitivity:     { dist: beta, alpha: 5, beta: 3 }
+    pay_threshold:         { dist: beta, alpha: 3, beta: 5 }
+    historical_completion: { dist: beta, alpha: 3, beta: 4 }
+    avg_daily_minutes:     { dist: lognormal, median: 95, sigma: 0.35, clamp: [15, 320], integer: true }
+    payment_mix:      { free: 0.30, occasional: 0.34, regular: 0.27, whale: 0.09 }
+    city_tier_mix:    { "1": 0.86, "2": 0.14 }
+    gender_mix:       { female: 0.54, male: 0.46 }
+    playback_speed_mix: { "1.0": 0.40, "1.25": 0.34, "1.5": 0.23, "2.0": 0.03 }
+    genre_priors:
+      billionaire_romance: 0.70
+      crime_mystery: 0.64
+      dark_romance: 0.58
+      revenge_thriller: 0.54
+      corporate_drama: 0.48
+      urban_fantasy: 0.42
+      campus_romance: 0.38
+      werewolf_shifter: 0.34
+    # Corporate drama plus billionaire romance in a metro professional cohort is
+    # the tier-1 aspirational signature.
+    region_mix:
+      tier1-aspirational-escapists: 0.32
+      slow-burn-comfort-seekers:    0.22
+      justice-payoff-bingers:       0.18
+      high-churn-thrill-chasers:    0.14
+      status-progression-loyalists: 0.08
+      household-catharsis-devotees: 0.06
+    listening_privacy: private_headphones
+    typical_professions:
+      ["Software engineer", "Consultant", "Marketing manager", "Product designer",
+       "Data analyst", "Chartered accountant", "Talent acquisition specialist"]
+    provisional: true
+
+  - id: wfh-multitasker
+    weight: 0.18
+    label: "Work-from-home, audio as background"
+    occasion: >
+      Listens while doing laundry, cooking or low-focus work at home. Constantly
+      half-attending, so anything requiring close tracking of names or timelines is
+      lost. Pauses and resumes across the day rather than in one block.
+    session_pattern: drip
+    session_minutes:       { dist: lognormal, median: 30, sigma: 0.50, clamp: [8, 160] }
+    gap_hours:             { dist: normal, mean: 22, sd: 9, clamp: [4, 96] }
+    tenure_months:         { dist: exponential, mean: 9, clamp: [0.5, 48], integer: true }
+    age:                   { dist: normal, mean: 31, sd: 6, clamp: [21, 52], integer: true }
+    churn_sensitivity:     { dist: beta, alpha: 5, beta: 3.5 }
+    pay_threshold:         { dist: beta, alpha: 3.5, beta: 4.5 }
+    historical_completion: { dist: beta, alpha: 2.5, beta: 4.5 }
+    avg_daily_minutes:     { dist: lognormal, median: 70, sigma: 0.45, clamp: [10, 280], integer: true }
+    payment_mix:      { free: 0.36, occasional: 0.34, regular: 0.23, whale: 0.07 }
+    city_tier_mix:    { "1": 0.74, "2": 0.26 }
+    gender_mix:       { female: 0.62, male: 0.38 }
+    playback_speed_mix: { "1.0": 0.48, "1.25": 0.30, "1.5": 0.19, "2.0": 0.03 }
+    genre_priors:
+      billionaire_romance: 0.66
+      campus_romance: 0.54
+      corporate_drama: 0.52
+      crime_mystery: 0.50
+      dark_romance: 0.48
+      urban_fantasy: 0.40
+      revenge_thriller: 0.38
+      werewolf_shifter: 0.36
+    # Half-attending across a whole day is the comfort region's natural habitat:
+    # steady progression survives interruption, twist cadence does not.
+    region_mix:
+      slow-burn-comfort-seekers:    0.34
+      tier1-aspirational-escapists: 0.26
+      household-catharsis-devotees: 0.16
+      justice-payoff-bingers:       0.12
+      high-churn-thrill-chasers:    0.08
+      status-progression-loyalists: 0.04
+    listening_privacy: mixed
+    typical_professions:
+      ["Content writer", "Customer success manager", "Remote QA engineer",
+       "Freelance illustrator", "Online tutor", "Operations coordinator"]
+    provisional: true
+
+  - id: night-binger-english
+    weight: 0.18
+    label: "Night binger, private and undistracted"
+    occasion: >
+      Headphones on in bed between 11pm and 2am. The most attentive listener in the
+      market and the most willing to spend to avoid a wait, but also the quickest to
+      notice a filler episode because nothing else is competing for attention.
+    session_pattern: binge
+    session_minutes:       { dist: lognormal, median: 62, sigma: 0.45, clamp: [12, 240] }
+    gap_hours:             { dist: normal, mean: 24, sd: 4, clamp: [10, 60] }
+    tenure_months:         { dist: exponential, mean: 11, clamp: [0.5, 54], integer: true }
+    age:                   { dist: normal, mean: 26, sd: 6, clamp: [18, 45], integer: true }
+    churn_sensitivity:     { dist: beta, alpha: 5.5, beta: 3 }
+    pay_threshold:         { dist: beta, alpha: 2.2, beta: 5.5 }
+    historical_completion: { dist: beta, alpha: 3.5, beta: 3.5 }
+    avg_daily_minutes:     { dist: lognormal, median: 80, sigma: 0.45, clamp: [15, 300], integer: true }
+    payment_mix:      { free: 0.22, occasional: 0.32, regular: 0.32, whale: 0.14 }
+    city_tier_mix:    { "1": 0.78, "2": 0.22 }
+    gender_mix:       { female: 0.66, male: 0.34 }
+    playback_speed_mix: { "1.0": 0.62, "1.25": 0.24, "1.5": 0.12, "2.0": 0.02 }
+    genre_priors:
+      dark_romance: 0.82
+      billionaire_romance: 0.74
+      werewolf_shifter: 0.62
+      urban_fantasy: 0.56
+      campus_romance: 0.48
+      revenge_thriller: 0.44
+      crime_mystery: 0.42
+      corporate_drama: 0.28
+    # Dark romance at 0.82 splits this cohort: the region that wants a safe
+    # relationship arc and the region that wants the next shock are both here in
+    # force, which is why it is the most informative cohort in this market.
+    region_mix:
+      slow-burn-comfort-seekers:    0.30
+      high-churn-thrill-chasers:    0.24
+      tier1-aspirational-escapists: 0.16
+      justice-payoff-bingers:       0.14
+      status-progression-loyalists: 0.10
+      household-catharsis-devotees: 0.06
+    listening_privacy: private_headphones
+    typical_professions:
+      ["Graphic designer", "Junior doctor", "Postgraduate student", "Copywriter",
+       "Software developer", "Architect", "Research associate"]
+    provisional: true
+
+  - id: gym-and-run
+    weight: 0.13
+    label: "Workout listener"
+    occasion: >
+      45-60 minutes at the gym or on a run, five or six days a week. Needs momentum
+      and pace — a slow, dialogue-heavy episode gets skipped for music mid-set.
+    session_pattern: drip
+    session_minutes:       { dist: lognormal, median: 45, sigma: 0.35, clamp: [15, 120] }
+    gap_hours:             { dist: normal, mean: 26, sd: 8, clamp: [12, 96] }
+    tenure_months:         { dist: exponential, mean: 7, clamp: [0.5, 36], integer: true }
+    age:                   { dist: normal, mean: 28, sd: 5, clamp: [19, 45], integer: true }
+    churn_sensitivity:     { dist: beta, alpha: 6, beta: 3 }
+    pay_threshold:         { dist: beta, alpha: 3.5, beta: 4.5 }
+    historical_completion: { dist: beta, alpha: 2.5, beta: 5 }
+    avg_daily_minutes:     { dist: lognormal, median: 48, sigma: 0.35, clamp: [15, 160], integer: true }
+    payment_mix:      { free: 0.38, occasional: 0.34, regular: 0.21, whale: 0.07 }
+    city_tier_mix:    { "1": 0.84, "2": 0.16 }
+    gender_mix:       { male: 0.58, female: 0.42 }
+    playback_speed_mix: { "1.0": 0.34, "1.25": 0.32, "1.5": 0.29, "2.0": 0.05 }
+    genre_priors:
+      revenge_thriller: 0.72
+      crime_mystery: 0.62
+      urban_fantasy: 0.54
+      werewolf_shifter: 0.46
+      dark_romance: 0.40
+      corporate_drama: 0.36
+      billionaire_romance: 0.34
+      campus_romance: 0.30
+    # Revenge thriller at 0.72 with an explicit intolerance for slow dialogue —
+    # the lowest-patience cohort in either market.
+    region_mix:
+      high-churn-thrill-chasers:    0.36
+      justice-payoff-bingers:       0.30
+      status-progression-loyalists: 0.16
+      tier1-aspirational-escapists: 0.12
+      slow-burn-comfort-seekers:    0.04
+      household-catharsis-devotees: 0.02
+    listening_privacy: private_headphones
+    typical_professions:
+      ["Sales manager", "Fitness trainer", "Backend engineer", "Investment analyst",
+       "Brand manager", "Physiotherapist"]
+    provisional: true
+
+  - id: student-english
+    weight: 0.11
+    label: "English-medium student"
+    occasion: >
+      College student on an English-medium campus, listening between lectures and on
+      shared rides. Discovers series socially and drops them socially. Almost entirely
+      on the free tier, and unlocking early costs a real trade-off against canteen money.
+    session_pattern: drip
+    session_minutes:       { dist: lognormal, median: 26, sigma: 0.55, clamp: [6, 130] }
+    gap_hours:             { dist: normal, mean: 18, sd: 10, clamp: [3, 96] }
+    tenure_months:         { dist: exponential, mean: 5, clamp: [0.5, 30], integer: true }
+    age:                   { dist: normal, mean: 20, sd: 2, clamp: [17, 26], integer: true }
+    churn_sensitivity:     { dist: beta, alpha: 5, beta: 3 }
+    pay_threshold:         { dist: beta, alpha: 6.5, beta: 2.5 }
+    historical_completion: { dist: beta, alpha: 2.5, beta: 4.5 }
+    avg_daily_minutes:     { dist: lognormal, median: 42, sigma: 0.55, clamp: [5, 200], integer: true }
+    payment_mix:      { free: 0.72, occasional: 0.21, regular: 0.06, whale: 0.01 }
+    city_tier_mix:    { "1": 0.66, "2": 0.34 }
+    gender_mix:       { female: 0.52, male: 0.48 }
+    playback_speed_mix: { "1.0": 0.30, "1.25": 0.30, "1.5": 0.32, "2.0": 0.08 }
+    genre_priors:
+      campus_romance: 0.78
+      dark_romance: 0.62
+      werewolf_shifter: 0.58
+      urban_fantasy: 0.56
+      billionaire_romance: 0.50
+      revenge_thriller: 0.44
+      crime_mystery: 0.38
+      corporate_drama: 0.16
+    # Campus romance and urban fantasy, discovered and abandoned socially: comfort
+    # and thrill in roughly equal measure, with the fantasy progression appetite
+    # behind them.
+    region_mix:
+      slow-burn-comfort-seekers:    0.26
+      high-churn-thrill-chasers:    0.24
+      status-progression-loyalists: 0.20
+      tier1-aspirational-escapists: 0.16
+      justice-payoff-bingers:       0.10
+      household-catharsis-devotees: 0.04
+    listening_privacy: private_earphones
+    typical_professions:
+      ["Undergraduate student", "Design student", "Law student",
+       "MBA aspirant", "Liberal arts student"]
+    provisional: true
+
+  # ── Cohorts added after the first live run ────────────────────────────────
+  # The original five covered nobody over 52, listened almost entirely on private
+  # headphones, and had no concept of a listener returning after a break. Those are
+  # not exotic edge cases — they are ordinary listening situations whose absence
+  # narrowed the panel. Each of these three fills a specific structural hole.
+
+  - id: evening-household-english
+    weight: 0.08
+    label: "Older listener, evening at home"
+    occasion: >
+      Late 40s to 60s, listening at home in the evening, often on a speaker while the
+      family is around or on a tablet after dinner. Long uninterrupted blocks, low
+      tolerance for anything they would be embarrassed to have overheard, and the
+      highest completion rate on the platform — when they commit to a story they
+      generally finish it.
+    session_pattern: binge
+    session_minutes:       { dist: lognormal, median: 58, sigma: 0.40, clamp: [15, 200] }
+    gap_hours:             { dist: normal, mean: 24, sd: 5, clamp: [10, 72] }
+    tenure_months:         { dist: exponential, mean: 14, clamp: [0.5, 60], integer: true }
+    age:                   { dist: normal, mean: 53, sd: 6, clamp: [45, 68], integer: true }
+    churn_sensitivity:     { dist: beta, alpha: 2.5, beta: 5 }
+    pay_threshold:         { dist: beta, alpha: 3, beta: 5 }
+    historical_completion: { dist: beta, alpha: 5, beta: 3 }
+    avg_daily_minutes:     { dist: lognormal, median: 65, sigma: 0.40, clamp: [10, 240], integer: true }
+    interruption_load:     { dist: beta, alpha: 3, beta: 5 }
+    payment_mix:      { free: 0.28, occasional: 0.32, regular: 0.30, whale: 0.10 }
+    city_tier_mix:    { "1": 0.62, "2": 0.38 }
+    gender_mix:       { female: 0.56, male: 0.44 }
+    playback_speed_mix: { "1.0": 0.84, "1.25": 0.13, "1.5": 0.03 }
+    discovery_mix:    { in_app_recommendation: 0.34, friend: 0.30, ad: 0.24, browsing: 0.12 }
+    genre_priors:
+      crime_mystery: 0.68
+      corporate_drama: 0.54
+      billionaire_romance: 0.46
+      revenge_thriller: 0.44
+      campus_romance: 0.24
+      dark_romance: 0.22
+      urban_fantasy: 0.20
+      werewolf_shifter: 0.14
+    region_mix:
+      household-catharsis-devotees: 0.34
+      slow-burn-comfort-seekers:    0.28
+      justice-payoff-bingers:       0.18
+      tier1-aspirational-escapists: 0.10
+      status-progression-loyalists: 0.07
+      high-churn-thrill-chasers:    0.03
+    listening_privacy: shared_speaker
+    typical_professions:
+      ["School principal", "Bank branch manager", "Homemaker", "Retired civil servant",
+       "Practice partner", "Senior HR manager", "Small business owner"]
+    provisional: true
+
+  - id: lapsed-returner-english
+    weight: 0.07
+    label: "Returning after a break"
+    occasion: >
+      Was active months ago, drifted off mid-series, and has come back to try something
+      new. Long platform tenure but no current habit, so the relationship is genuinely
+      fragile: they remember abandoning the last one and are half-expecting to abandon
+      this one too. The most informative cohort for early-episode churn.
+    session_pattern: drip
+    session_minutes:       { dist: lognormal, median: 28, sigma: 0.55, clamp: [6, 150] }
+    gap_hours:             { dist: normal, mean: 40, sd: 20, clamp: [6, 168] }
+    tenure_months:         { dist: normal, mean: 19, sd: 8, clamp: [6, 54], integer: true }
+    age:                   { dist: normal, mean: 30, sd: 7, clamp: [19, 55], integer: true }
+    churn_sensitivity:     { dist: beta, alpha: 6.5, beta: 2.5 }
+    pay_threshold:         { dist: beta, alpha: 5, beta: 3 }
+    historical_completion: { dist: beta, alpha: 2, beta: 6 }
+    avg_daily_minutes:     { dist: lognormal, median: 30, sigma: 0.60, clamp: [5, 160], integer: true }
+    interruption_load:     { dist: beta, alpha: 5, beta: 4 }
+    payment_mix:      { free: 0.62, occasional: 0.26, regular: 0.10, whale: 0.02 }
+    city_tier_mix:    { "1": 0.70, "2": 0.30 }
+    gender_mix:       { female: 0.55, male: 0.45 }
+    playback_speed_mix: { "1.0": 0.44, "1.25": 0.30, "1.5": 0.22, "2.0": 0.04 }
+    discovery_mix:    { ad: 0.50, in_app_recommendation: 0.32, browsing: 0.12, friend: 0.06 }
+    genre_priors:
+      billionaire_romance: 0.60
+      dark_romance: 0.54
+      crime_mystery: 0.52
+      revenge_thriller: 0.48
+      campus_romance: 0.42
+      urban_fantasy: 0.40
+      corporate_drama: 0.38
+      werewolf_shifter: 0.36
+    region_mix:
+      high-churn-thrill-chasers:    0.32
+      slow-burn-comfort-seekers:    0.22
+      tier1-aspirational-escapists: 0.18
+      justice-payoff-bingers:       0.14
+      status-progression-loyalists: 0.08
+      household-catharsis-devotees: 0.06
+    listening_privacy: mixed
+    typical_professions:
+      ["Operations manager", "Nurse", "Freelance photographer", "Sales lead",
+       "Primary school teacher", "Logistics coordinator", "Recruiter"]
+    provisional: true
+
+  - id: longhaul-transit
+    weight: 0.04
+    label: "Intercity traveller, long offline blocks"
+    occasion: >
+      Bus, train or flight between cities a few times a month. Downloads a batch of
+      episodes beforehand because connectivity will be gone, then listens for hours
+      uninterrupted. Rare sessions but the deepest of any cohort, and a downloaded
+      batch that disappoints is a whole journey wasted rather than one bad episode.
+    session_pattern: binge
+    session_minutes:       { dist: lognormal, median: 150, sigma: 0.50, clamp: [30, 480] }
+    gap_hours:             { dist: normal, mean: 96, sd: 48, clamp: [24, 336] }
+    tenure_months:         { dist: exponential, mean: 10, clamp: [0.5, 48], integer: true }
+    age:                   { dist: normal, mean: 32, sd: 8, clamp: [20, 58], integer: true }
+    churn_sensitivity:     { dist: beta, alpha: 3.5, beta: 4 }
+    pay_threshold:         { dist: beta, alpha: 2.5, beta: 5 }
+    historical_completion: { dist: beta, alpha: 4, beta: 3.5 }
+    avg_daily_minutes:     { dist: lognormal, median: 38, sigma: 0.70, clamp: [5, 300], integer: true }
+    interruption_load:     { dist: beta, alpha: 1.5, beta: 7 }
+    payment_mix:      { free: 0.30, occasional: 0.32, regular: 0.28, whale: 0.10 }
+    city_tier_mix:    { "1": 0.58, "2": 0.42 }
+    gender_mix:       { male: 0.58, female: 0.42 }
+    playback_speed_mix: { "1.0": 0.52, "1.25": 0.28, "1.5": 0.18, "2.0": 0.02 }
+    discovery_mix:    { browsing: 0.40, in_app_recommendation: 0.30, ad: 0.22, friend: 0.08 }
+    genre_priors:
+      crime_mystery: 0.66
+      revenge_thriller: 0.62
+      urban_fantasy: 0.56
+      corporate_drama: 0.46
+      billionaire_romance: 0.44
+      dark_romance: 0.40
+      werewolf_shifter: 0.38
+      campus_romance: 0.26
+    region_mix:
+      status-progression-loyalists: 0.30
+      justice-payoff-bingers:       0.24
+      tier1-aspirational-escapists: 0.18
+      high-churn-thrill-chasers:    0.14
+      slow-burn-comfort-seekers:    0.10
+      household-catharsis-devotees: 0.04
+    listening_privacy: private_headphones
+    typical_professions:
+      ["Regional sales manager", "Site engineer", "Auditor", "Medical representative",
+       "Project consultant", "Field service lead"]
+    provisional: true

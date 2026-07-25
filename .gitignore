@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+.env
+.DS_Store
+
+# Generated artifacts
+populations/
+runs/
+scripts/*.txt
+!scripts/example_*.txt
